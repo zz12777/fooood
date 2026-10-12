@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新竹吃什麼</title>
+  <meta name="description" content="新竹市與新竹縣的口袋餐廳清單。依地區、價位、類別篩選，也能隨機抽今天吃什麼。">
+  <meta name="theme-color" content="#FBF7EA">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#list">跳到餐廳清單</a>
+
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" id="brand-mark"></span>
+      <h1>新竹吃什麼</h1>
+    </div>
+    <p class="total" id="total-count" aria-live="polite"></p>
+  </header>
+
+  <p class="demo-banner" id="demo-banner" hidden>目前看到的是示範資料，店家都是虛構的，不是你的收藏。</p>
+
+  <main>
+    <section class="draw" aria-labelledby="draw-title">
+      <div class="draw-art" id="draw-art" aria-hidden="true"></div>
+      <div class="draw-body">
+        <h2 id="draw-title">今天吃什麼？</h2>
+        <p class="draw-hint" id="draw-hint">資料載入後，就能從符合條件的店裡抽。</p>
+
+        <fieldset class="seg">
+          <legend>一次抽幾間</legend>
+          <label><input type="radio" name="count" value="1" checked><span>1 間</span></label>
+          <label><input type="radio" name="count" value="2"><span>2 間</span></label>
+          <label><input type="radio" name="count" value="3"><span>3 間</span></label>
+        </fieldset>
+
+        <div class="switches">
+          <label class="switch">
+            <input type="checkbox" role="switch" id="opt-open">
+            <span class="track" aria-hidden="true"></span>
+            <span class="switch-text">只抽營業中的店</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" role="switch" id="opt-skip-visited">
+            <span class="track" aria-hidden="true"></span>
+            <span class="switch-text">排除吃過的</span>
+          </label>
+        </div>
+
+        <button type="button" class="btn-primary" id="draw-btn" disabled>抽一抽</button>
+        <p class="draw-note" id="draw-note" aria-live="polite"></p>
+      </div>
+      <div class="results" id="draw-result" aria-live="polite"></div>
+    </section>
+
+    <details class="filters" id="filters">
+      <summary>
+        <span class="summary-label" id="filters-label"></span>
+        <span class="badge" id="filter-badge" hidden></span>
+      </summary>
+      <div class="filters-body">
+        <div class="group">
+          <h3>地區</h3>
+          <div id="filter-areas"></div>
+        </div>
+        <div class="group">
+          <h3>價位（人均）</h3>
+          <div class="chips" id="filter-prices"></div>
+        </div>
+        <div class="group">
+          <h3>類別</h3>
+          <div class="chips" id="filter-cats"></div>
+        </div>
+        <button type="button" class="btn-text" id="clear-filters" hidden>清除所有篩選</button>
+      </div>
+    </details>
+
+    <section class="list-section" aria-labelledby="list-title">
+      <div class="list-head">
+        <h2 id="list-title">餐廳清單</h2>
+        <p class="list-count" id="list-count" aria-live="polite"></p>
+        <label class="search">
+          <span class="sr">搜尋店名或備註</span>
+          <span class="search-icon" id="search-icon"></span>
+          <input type="search" id="search" placeholder="搜尋店名或備註" autocomplete="off">
+        </label>
+      </div>
+      <div id="list" class="list" tabindex="-1"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>用來把想吃的店收在同一個地方。</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
