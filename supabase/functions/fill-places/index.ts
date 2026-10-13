@@ -171,6 +171,8 @@ Deno.serve(async (req) => {
     const notFound = [];
     const failed = [];
     for (const r of todo || []) {
+      // 放慢節奏：每次間隔約 3.5 秒，一分鐘不超過約 17 次，低於每分鐘 20 次的上限
+      await new Promise((ok) => setTimeout(ok, 3500));
       try {
         const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
         const hit = pickNearest(data.places, r.lat, r.lng, MATCH_RADIUS_M);
