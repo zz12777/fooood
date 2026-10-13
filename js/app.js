@@ -13,7 +13,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
-  draw: { count: 1, openOnly: false, skipVisited: false, drawn: false },
+  draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
 };
 
@@ -304,7 +304,7 @@ function updateDrawHint() {
   }
   hint.textContent =
     list.length > 0
-      ? `目前有 ${list.length} 間符合條件，會從這些店裡抽。`
+      ? `目前有 ${list.length} 間符合條件，一次會抽 3 間。`
       : '目前沒有符合條件的店，放寬篩選或關掉開關再試試。';
   btn.disabled = list.length === 0;
 }
@@ -369,9 +369,6 @@ function bindEvents() {
     refresh();
   });
 
-  document.querySelectorAll('input[name="count"]').forEach((r) =>
-    r.addEventListener('change', () => (state.draw.count = Number(r.value)))
-  );
   $('#opt-open').addEventListener('change', (e) => {
     state.draw.openOnly = e.target.checked;
     updateDrawHint();
