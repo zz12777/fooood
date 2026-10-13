@@ -94,6 +94,7 @@ const FIELD_MASK = [
   'places.regularOpeningHours',
   'places.priceRange',
   'places.businessStatus',
+  'places.googleMapsUri',
 ].join(',');
 
 async function searchPlace(apiKey, name, lat, lng) {
@@ -109,7 +110,7 @@ async function searchPlace(apiKey, name, lat, lng) {
       languageCode: 'zh-TW',
       regionCode: 'TW',
       maxResultCount: 5,
-      locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius: 200 } },
+      locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius: 50000 } },
     }),
   });
   if (!res.ok) {
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
     // 3. 找出還沒查過的店
     const { data: todo, error: qErr } = await userClient
       .from('restaurants')
-      .select('id, name, lat, lng, note')
+      .select('id, name, lat, lng, note, google_cid')
       .is('hours_updated_at', null)
       .not('lat', 'is', null)
       .order('created_at', { ascending: true })
@@ -175,8 +176,18 @@ Deno.serve(async (req) => {
       await new Promise((ok) => setTimeout(ok, 3500));
       try {
         const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
-        const hit = pickNearest(data.places, r.lat, r.lng, MATCH_RADIUS_M);
+        // 先用 Google 地圖的店家編號（cid）精準比對；座標只是粗略位置，不能單獨依賴
+        const byCid = r.google_cid
+          ? (data.places || []).find((p) => String(p.googleMapsUri || '').includes(`cid=${r.google_cid}`))
+          : null;
+        const hit = byCid
+          ? { place: byCid, distanceM: 0 }
+          : pickNearest(data.places, r.lat, r.lng, MATCH_RADIUS_M);
         const upd = buildUpdate(hit ? hit.place : null, r.note);
+        if (byCid && byCid.location) {
+          upd.lat = byCid.location.latitude;
+          upd.lng = byCid.location.longitude;
+        }
         let { error: uErr } = await userClient.from('restaurants').update(upd).eq('id', r.id);
         if (uErr && uErr.code === '23505' && upd.place_id) {
           // 同一個 Google 地點已被另一筆資料使用：不寫 place_id，其餘照存
