@@ -126,9 +126,8 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL');
     const anon = Deno.env.get('SUPABASE_ANON_KEY');
-    const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
-    if (!url || !anon || !service) return json({ error: '伺服器設定不完整' }, 500);
+    if (!url || !anon) return json({ error: '伺服器設定不完整' }, 500);
 
     // 1. 驗證登入與白名單
     const authHeader = req.headers.get('Authorization') || '';
@@ -137,12 +136,9 @@ Deno.serve(async (req) => {
     const email = userData?.user?.email?.toLowerCase();
     if (!email) return json({ error: '請先登入' }, 401);
 
-    const admin = createClient(url, service);
-    const { data: editors, error: edErr } = await admin.from('editors').select('email');
-    if (edErr) return json({ error: '讀取白名單失敗' }, 500);
-    if (!(editors || []).some((e) => String(e.email).toLowerCase() === email)) {
-      return json({ error: '這個帳號沒有權限' }, 403);
-    }
+    const { data: isEditor, error: edErr } = await userClient.rpc('is_editor');
+    if (edErr) return json({ error: `讀取白名單失敗：${edErr.message}` }, 500);
+    if (!isEditor) return json({ error: '這個帳號沒有權限' }, 403);
 
     // 2. 參數
     const body = await req.json().catch(() => ({}));
@@ -150,7 +146,7 @@ Deno.serve(async (req) => {
     const dryRun = body.dryRun === true;
 
     // 3. 找出還沒查過的店
-    const { data: todo, error: qErr } = await admin
+    const { data: todo, error: qErr } = await userClient
       .from('restaurants')
       .select('id, name, lat, lng, note')
       .is('hours_updated_at', null)
@@ -159,7 +155,7 @@ Deno.serve(async (req) => {
       .limit(limit);
     if (qErr) return json({ error: `查詢失敗：${qErr.message}` }, 500);
 
-    const { count: remainingBefore } = await admin
+    const { count: remainingBefore } = await userClient
       .from('restaurants')
       .select('id', { count: 'exact', head: true })
       .is('hours_updated_at', null)
@@ -179,11 +175,11 @@ Deno.serve(async (req) => {
         const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
         const hit = pickNearest(data.places, r.lat, r.lng, MATCH_RADIUS_M);
         const upd = buildUpdate(hit ? hit.place : null, r.note);
-        let { error: uErr } = await admin.from('restaurants').update(upd).eq('id', r.id);
+        let { error: uErr } = await userClient.from('restaurants').update(upd).eq('id', r.id);
         if (uErr && uErr.code === '23505' && upd.place_id) {
           // 同一個 Google 地點已被另一筆資料使用：不寫 place_id，其餘照存
           delete upd.place_id;
-          ({ error: uErr } = await admin.from('restaurants').update(upd).eq('id', r.id));
+          ({ error: uErr } = await userClient.from('restaurants').update(upd).eq('id', r.id));
         }
         if (uErr) throw new Error(uErr.message);
         if (hit) matched.push({ name: r.name, distanceM: hit.distanceM, hasHours: !!upd.opening_hours });
@@ -195,7 +191,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { count: remaining } = await admin
+    const { count: remaining } = await userClient
       .from('restaurants')
       .select('id', { count: 'exact', head: true })
       .is('hours_updated_at', null)
