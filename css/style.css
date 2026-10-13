@@ -687,6 +687,12 @@ main {
   margin-bottom: 8px;
 }
 
+.foot-link {
+  margin-left: 12px;
+  color: var(--ink-soft);
+  text-underline-offset: 4px;
+}
+
 .foot {
   max-width: 72rem;
   margin: 0 auto;
