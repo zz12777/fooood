@@ -415,6 +415,11 @@ async function load() {
     state.areas = data.areas;
     state.cats = data.cats;
     $('#total-count').textContent = state.all.length ? `收藏 ${state.all.length} 間` : '';
+    // 還沒有任何營業時間資料時，先不顯示「只抽營業中」，避免開了就抽不到店
+    if (state.all.length && !state.all.some((r) => r.hours)) {
+      $('#opt-open').closest('label').hidden = true;
+      state.draw.openOnly = false;
+    }
     renderFilterChips();
     refresh();
   } catch (err) {

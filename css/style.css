@@ -78,6 +78,10 @@ input {
   border-radius: 6px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .sr {
   position: absolute;
   width: 1px;
