@@ -210,7 +210,12 @@ function renderFilterChips() {
     if (!areaCount.get(a.name)) return;
     (byCounty[a.county] ||= []).push(a);
   });
-  $('#filter-areas').innerHTML = Object.entries(byCounty)
+  // 「其他」放最後，新竹市、新竹縣在前
+  const countyOrder = ['新竹市', '新竹縣', '其他'];
+  const orderedCounties = Object.entries(byCounty).sort(
+    (x, y) => countyOrder.indexOf(x[0]) - countyOrder.indexOf(y[0])
+  );
+  $('#filter-areas').innerHTML = orderedCounties
     .map(
       ([county, list]) =>
         `<div class="county"><span class="county-name">${esc(county)}</span><div class="chips">${list
