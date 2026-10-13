@@ -185,7 +185,14 @@ Deno.serve(async (req) => {
         }
         if (uErr) throw new Error(uErr.message);
         if (hit) matched.push({ name: r.name, distanceM: hit.distanceM, hasHours: !!upd.opening_hours });
-        else notFound.push(r.name);
+        else {
+          // 附上 Google 回傳的最近候選，方便判斷為什麼沒對上
+          const near = (data.places || [])
+            .filter((p) => p.location)
+            .map((p) => ({ n: p.displayName?.text || '?', d: Math.round(haversineM(r.lat, r.lng, p.location.latitude, p.location.longitude)) }))
+            .sort((a, b) => a.d - b.d)[0];
+          notFound.push(near ? `${r.name}（最近的是「${near.n}」，距離 ${near.d} 公尺）` : `${r.name}（Google 沒有回傳任何結果）`);
+        }
       } catch (e) {
         // Google 或寫入出錯的店不標記為已查，下次會再試；遇到額度或權限錯誤就整批停下
         failed.push({ name: r.name, error: String(e.message || e) });
