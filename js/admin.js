@@ -164,5 +164,84 @@ $('#stop-btn').addEventListener('click', () => {
   stopRequested = true;
 });
 
+/* ---------- 貼連結新增 ---------- */
+
+const ADD_CHUNK = 6;
+let adding = false;
+
+async function callAdd(lines) {
+  const { data, error } = await sb.functions.invoke('add-places', { body: { lines } });
+  if (error) {
+    let msg = error.message;
+    try {
+      const j = await error.context.json();
+      if (j && j.error) msg = j.error;
+    } catch {
+      /* 保留原本的訊息 */
+    }
+    throw new Error(msg);
+  }
+  return data.results || [];
+}
+
+async function addPlaces() {
+  const lines = $('#add-input')
+    .value.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!lines.length) return;
+  adding = true;
+  $('#add-btn').disabled = true;
+  const out = $('#add-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+    li.scrollIntoView({ block: 'nearest' });
+  };
+  let added = 0;
+  let exists = 0;
+  let failed = 0;
+  const failedLines = [];
+  try {
+    for (let i = 0; i < lines.length; i += ADD_CHUNK) {
+      const chunk = lines.slice(i, i + ADD_CHUNK);
+      addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 筆，共 ${lines.length} 筆`);
+      const results = await callAdd(chunk);
+      results.forEach((r, k) => {
+        if (r.status === 'added') {
+          added += 1;
+          addLog(`新增：${r.name}`, 'ok');
+        } else if (r.status === 'exists') {
+          exists += 1;
+          addLog(`略過：${r.name}（${r.message}）`);
+        } else {
+          failed += 1;
+          failedLines.push(chunk[k]);
+          addLog(`失敗：${r.input}（${r.message}）`, 'error');
+        }
+      });
+      if (results.length < chunk.length) {
+        failed += chunk.length - results.length;
+        failedLines.push(...chunk.slice(results.length));
+        addLog('因為 Google 額度或權限問題，剩下的先停下。', 'error');
+        break;
+      }
+    }
+    addLog(`結束：新增 ${added} 間，已存在 ${exists} 間，失敗 ${failed} 間。`, failed ? 'error' : 'ok');
+    // 只留下失敗的，方便修正後再按一次
+    $('#add-input').value = failedLines.join('\n');
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    adding = false;
+    $('#add-btn').disabled = false;
+    refreshStats();
+  }
+}
+$('#add-btn').addEventListener('click', () => !adding && addPlaces());
+
 $('#brand-mark').innerHTML = mark();
 route();

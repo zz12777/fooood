@@ -125,3 +125,31 @@
   border-color: var(--green);
   background: var(--green-soft);
 }
+
+.field-wide {
+  flex: 1 1 100%;
+  display: block;
+}
+.field textarea {
+  width: 100%;
+  min-height: 9rem;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  font: inherit;
+  line-height: 1.7;
+  resize: vertical;
+}
+.field textarea:hover {
+  border-color: var(--ink-soft);
+}
+.field textarea:focus {
+  border-color: var(--ink);
+  outline: 3px solid var(--blue-deep);
+  outline-offset: 2px;
+}
+.field textarea::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.85;
+}

@@ -64,6 +64,20 @@
         </div>
         <ol class="log" id="log" aria-live="polite"></ol>
       </section>
+      <section class="panel" aria-labelledby="add-title">
+        <h2 id="add-title">貼連結新增店家</h2>
+        <p class="muted">
+          從 Google 地圖按「分享」複製連結，一行貼一個。連結後面可以接著寫備註，例如看到的貼文或推薦原因。已經在清單裡的店會自動略過。
+        </p>
+        <label class="field field-wide">
+          <span class="sr">Google 地圖連結</span>
+          <textarea id="add-input" rows="6" placeholder="https://maps.app.goo.gl/xxxx 朋友推薦&#10;https://maps.app.goo.gl/yyyy"></textarea>
+        </label>
+        <div class="row actions">
+          <button type="button" class="btn-primary" id="add-btn">新增到清單</button>
+        </div>
+        <ol class="log" id="add-log" aria-live="polite"></ol>
+      </section>
     </div>
   </main>
 
