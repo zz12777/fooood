@@ -421,6 +421,11 @@ async function load() {
       $('#opt-open').closest('label').hidden = true;
       state.draw.openOnly = false;
     }
+    // 還沒有任何一間標記為吃過時，「排除吃過的」沒有作用，先不顯示
+    if (state.all.length && !state.all.some((r) => r.status === 'visited')) {
+      $('#opt-skip-visited').closest('label').hidden = true;
+      state.draw.skipVisited = false;
+    }
     renderFilterChips();
     refresh();
   } catch (err) {

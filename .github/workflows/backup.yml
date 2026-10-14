@@ -1,0 +1,40 @@
+name: 每週備份與防休眠
+
+on:
+  schedule:
+    - cron: '17 2 * * 1' # 每週一 02:17（UTC），台灣時間早上 10:17
+  workflow_dispatch: # 也可以到 Actions 頁面手動執行
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 讀出資料並備份
+        run: node scripts/backup.mjs backup
+
+      - name: 保存備份檔（保留 90 天）
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 90
+
+      # GitHub 對 60 天沒有任何動靜的專案會自動停掉排程。
+      # 每週留一行時間紀錄，讓排程不會被停用。
+      - name: 更新活動紀錄
+        run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .last-backup
+          git config user.name "backup-bot"
+          git config user.email "backup-bot@users.noreply.github.com"
+          git add .last-backup
+          git commit -m "每週備份紀錄" || true
+          git push
