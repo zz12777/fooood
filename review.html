@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>整理店家 | 新竹吃什麼</title>
+  <meta name="theme-color" content="#FBF7EA">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/review.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" id="brand-mark"></span>
+      <h1>整理店家</h1>
+    </div>
+    <nav class="top-links">
+      <a class="back" href="admin.html">管理</a>
+      <a class="back" href="./">回到清單</a>
+    </nav>
+  </header>
+
+  <main class="admin review">
+    <p class="muted" id="loading">載入中</p>
+
+    <section class="panel" id="panel-denied" hidden>
+      <h2>需要先登入</h2>
+      <p class="muted">這一頁只有管理者可以使用。請先到管理頁登入，登入後再回到這裡。</p>
+      <a class="btn-primary link-btn" href="admin.html">到管理頁登入</a>
+    </section>
+
+    <div id="panel-main" hidden>
+      <section class="panel" aria-labelledby="progress-title">
+        <h2 id="progress-title">整理進度</h2>
+        <p class="muted">替每間店選類別、價位，標記想吃或吃過。每次點選都會自動儲存，整理好的店按「整理好了」就會移出待整理。</p>
+        <dl class="stats">
+          <div><dt>待整理</dt><dd id="stat-todo">載入中</dd></div>
+          <div><dt>全部</dt><dd id="stat-all">載入中</dd></div>
+          <div><dt>吃過</dt><dd id="stat-visited">載入中</dd></div>
+        </dl>
+        <div class="chips" id="tabs" role="group" aria-label="顯示範圍"></div>
+        <label class="field field-wide">
+          <span class="sr">搜尋店名</span>
+          <input type="search" id="q" placeholder="搜尋店名" autocomplete="off">
+        </label>
+      </section>
+
+      <div class="review-list" id="review-list"></div>
+    </div>
+  </main>
+
+  <script type="module" src="js/review.js"></script>
+</body>
+</html>

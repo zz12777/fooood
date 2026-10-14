@@ -1,0 +1,113 @@
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  text-decoration: none;
+}
+
+.review {
+  max-width: 56rem;
+}
+.review-list {
+  display: grid;
+  gap: 16px;
+}
+.review-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.rcard {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+}
+.rcard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rcard h3 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.rcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+.rcard-meta a {
+  color: var(--blue-deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.saved {
+  flex: none;
+  min-width: 4em;
+  text-align: right;
+  font-size: 0.8125rem;
+  color: var(--green-deep);
+}
+.saved.is-error {
+  color: #8a2f1c;
+}
+
+.rgroup {
+  display: grid;
+  gap: 8px;
+}
+.rgroup h4 {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.rcard .chip {
+  min-height: 40px;
+  padding: 0 14px;
+}
+.rcard textarea {
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 10px 14px;
+  font: inherit;
+  line-height: 1.6;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  resize: vertical;
+}
+.rcard textarea:focus {
+  border-color: var(--ink);
+  outline: 3px solid var(--blue-deep);
+  outline-offset: 2px;
+}
+.rcard-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#panel-main {
+  display: grid;
+  gap: 16px;
+}
+.rgroup h4,
+.rcard h3,
+.rcard-meta {
+  margin: 0;
+}
+.rgroup {
+  gap: 6px;
+}
+.rcard-meta {
+  margin-top: 4px;
+}

@@ -153,3 +153,9 @@
   color: var(--ink-soft);
   opacity: 0.85;
 }
+
+.top-links {
+  display: flex;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+}
