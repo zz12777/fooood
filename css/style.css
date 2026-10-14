@@ -620,13 +620,20 @@ main {
   border: 1.5px solid var(--yellow);
 }
 
+.addr {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
 .note {
   color: var(--ink-soft);
   font-size: 0.9375rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.note-link {
+  color: var(--blue-deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .card-foot {

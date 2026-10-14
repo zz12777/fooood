@@ -1,6 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
+import { linkify, cleanAddress } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -181,9 +182,10 @@ function cardHtml(r, now, index = 0) {
       ${price}
     </div>
     <div class="tags">${tags.join('')}</div>
-    ${r.note ? `<p class="note">${esc(r.note)}</p>` : ''}
+    ${r.address ? `<p class="addr">${esc(cleanAddress(r.address))}</p>` : ''}
+    ${r.note ? `<p class="note">${linkify(r.note)}</p>` : ''}
     <div class="card-foot">
-      <a class="link link-map" href="${esc(mapHref)}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}在地圖上看</a>
+      <a class="link link-map" href="${esc(mapHref)}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}Google Map</a>
       ${refs}
       ${openTag}
     </div>
@@ -309,7 +311,7 @@ function updateDrawHint() {
   }
   hint.textContent =
     list.length > 0
-      ? `目前有 ${list.length} 間符合條件，一次會抽 3 間。`
+      ? '從符合條件的店裡，一次抽 3 間。'
       : '目前沒有符合條件的店，放寬篩選或關掉開關再試試。';
   btn.disabled = list.length === 0;
 }
@@ -335,7 +337,7 @@ function doDraw() {
   void out.offsetWidth; // 重新觸發進場動畫
   out.classList.add('is-fresh');
 
-  const parts = [`從 ${list.length} 間符合條件的店裡抽出 ${picked.length} 間。`];
+  const parts = [`從符合條件的店裡抽出 ${picked.length} 間。`];
   if (state.draw.openOnly && unknown > 0) parts.push(`有 ${unknown} 間沒有營業時間資料，這次先跳過。`);
   note.textContent = parts.join('');
 
@@ -414,7 +416,6 @@ async function load() {
     state.all = data.restaurants;
     state.areas = data.areas;
     state.cats = data.cats;
-    $('#total-count').textContent = state.all.length ? `收藏 ${state.all.length} 間` : '';
     // 還沒有任何營業時間資料時，先不顯示「只抽營業中」，避免開了就抽不到店
     if (state.all.length && !state.all.some((r) => r.hours)) {
       $('#opt-open').closest('label').hidden = true;

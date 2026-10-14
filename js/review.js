@@ -1,6 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
+import { linkify, cleanAddress } from './text.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -88,13 +89,15 @@ function cardHtml(r) {
     )
     .join('');
   const area = r.area ? r.area.name : '未分區';
-  const link = r.maps_url ? `<a href="${esc(r.maps_url)}" target="_blank" rel="noopener">在地圖上看</a>` : '';
+  const link = r.maps_url ? `<a href="${esc(r.maps_url)}" target="_blank" rel="noopener">Google Map</a>` : '';
+  const addr = r.address ? `<p class="rcard-addr">${esc(cleanAddress(r.address))}</p>` : '';
   return `
   <article class="rcard" data-id="${r.id}">
     <div class="rcard-head">
       <div>
         <h3>${esc(r.name)}</h3>
         <div class="rcard-meta"><span>${esc(area)}</span>${link}</div>
+        ${addr}
       </div>
       <span class="saved" aria-live="polite"></span>
     </div>
@@ -104,7 +107,8 @@ function cardHtml(r) {
       <button type="button" class="chip chip-areas" data-act="status" data-v="want" aria-pressed="${r.status !== 'visited'}">想吃</button>
       <button type="button" class="chip chip-cats" data-act="status" data-v="visited" aria-pressed="${r.status === 'visited'}">吃過</button>
     </div></div>
-    <label class="rgroup"><h4>備註</h4><textarea data-act="note" rows="2" placeholder="例如推薦的菜、誰推薦的">${esc(r.note || '')}</textarea></label>
+    <label class="rgroup"><h4>備註</h4><textarea data-act="note" rows="2" placeholder="例如推薦的菜、誰推薦的，也可以貼貼文連結">${esc(r.note || '')}</textarea>
+      <p class="note-preview"${/https?:\/\//.test(r.note || '') ? '' : ' hidden'}>${linkify(r.note || '')}</p></label>
     <div class="rcard-foot">${
       r.needs_review
         ? '<button type="button" class="btn-primary" data-act="done">整理好了</button>'
@@ -190,6 +194,9 @@ $('#review-list').addEventListener('change', async (e) => {
   const r = state.rows.find((x) => x.id === card.dataset.id);
   const value = e.target.value.trim() || null;
   if (value !== (r.note || null)) await updateRow(r, { note: value }, card);
+  const pv = card.querySelector('.note-preview');
+  pv.innerHTML = linkify(value || '');
+  pv.hidden = !/https?:\/\//.test(value || '');
 });
 
 $('#tabs').addEventListener('click', (e) => {

@@ -111,3 +111,24 @@
 .rcard-meta {
   margin-top: 4px;
 }
+
+.rcard-addr {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.note-preview {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.note-preview[hidden] {
+  display: none;
+}
+.note-link {
+  color: var(--blue-deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
