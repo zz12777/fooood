@@ -101,7 +101,12 @@ function cardHtml(r) {
       </div>
       <span class="saved" aria-live="polite"></span>
     </div>
-    <div class="rgroup"><h4>類別（可複選）</h4><div class="chips">${catChips}</div></div>
+    <div class="rgroup"><h4>類別（可複選）</h4><div class="chips">${catChips}</div>
+      <form class="cat-add" data-act="cat-add">
+        <input type="text" name="name" maxlength="12" placeholder="沒有想要的類別？打字新增" autocomplete="off" aria-label="新增類別">
+        <button type="submit" class="btn-secondary">新增並選取</button>
+      </form>
+    </div>
     <div class="rgroup"><h4>價位（人均，再點一次取消）</h4><div class="chips">${priceChips}</div></div>
     <div class="rgroup"><h4>狀態</h4><div class="chips">
       <button type="button" class="chip chip-areas" data-act="status" data-v="want" aria-pressed="${r.status !== 'visited'}">想吃</button>
@@ -186,6 +191,33 @@ $('#review-list').addEventListener('click', async (e) => {
   if (act === 'done' || act === 'undone') {
     if (await updateRow(r, { needs_review: act === 'undone' }, card)) render();
   }
+});
+
+// 打字新增類別：沒有就建立，已經有同名的就直接選取
+$('#review-list').addEventListener('submit', async (e) => {
+  const form = e.target.closest('[data-act="cat-add"]');
+  if (!form) return;
+  e.preventDefault();
+  const card = form.closest('.rcard');
+  const r = state.rows.find((x) => x.id === card.dataset.id);
+  const name = form.elements.name.value.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  let cat = state.cats.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (!cat) {
+    const sort = Math.max(0, ...state.cats.map((c) => c.sort_order)) + 1;
+    const { data, error } = await sb.from('categories').insert({ name, sort_order: sort }).select().single();
+    if (error) return flash(card, `新增失敗：${error.message}`, true);
+    cat = data;
+    state.cats.push(cat);
+  }
+  if (!r.catIds.has(cat.id)) {
+    const { error } = await sb.from('restaurant_categories').insert({ restaurant_id: r.id, category_id: cat.id });
+    if (error) return flash(card, `儲存失敗：${error.message}`, true);
+    r.catIds.add(cat.id);
+  }
+  render();
+  const again = document.querySelector(`.rcard[data-id="${r.id}"]`);
+  flash(again, `已加入「${cat.name}」`);
 });
 
 $('#review-list').addEventListener('change', async (e) => {

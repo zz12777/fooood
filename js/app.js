@@ -309,10 +309,7 @@ function updateDrawHint() {
     btn.disabled = true;
     return;
   }
-  hint.textContent =
-    list.length > 0
-      ? '從符合條件的店裡，一次抽 3 間。'
-      : '目前沒有符合條件的店，放寬篩選或關掉開關再試試。';
+  hint.textContent = list.length > 0 ? '' : '目前沒有符合條件的店，放寬篩選或關掉開關再試試。';
   btn.disabled = list.length === 0;
 }
 
