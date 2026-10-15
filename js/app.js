@@ -309,7 +309,12 @@ function updateDrawHint() {
     btn.disabled = true;
     return;
   }
-  hint.textContent = list.length > 0 ? '' : '目前沒有符合條件的店，放寬篩選或關掉開關再試試。';
+  hint.textContent =
+    list.length === 0
+      ? '目前沒有符合條件的店，放寬篩選或關掉開關再試試。'
+      : state.draw.drawn
+        ? ''
+        : '想縮小範圍，可以先在下方選擇地區、價位或類別。';
   btn.disabled = list.length === 0;
 }
 
@@ -340,6 +345,7 @@ function doDraw() {
 
   state.draw.drawn = true;
   $('#draw-label').textContent = '再抽一次';
+  updateDrawHint();
 }
 
 /* ---------- 事件 ---------- */
