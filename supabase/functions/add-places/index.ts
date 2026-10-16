@@ -166,6 +166,9 @@ Deno.serve(async (req) => {
         if (!SHORT_HOSTS.test(host) && !GOOGLE_HOST.test(host)) throw new Error('不是 Google 地圖連結');
         const full = await expandUrl(parsed.url);
         if (!GOOGLE_HOST.test(new URL(full).hostname)) throw new Error('短網址沒有指向 Google 地圖');
+        if (/placelists|\/maps\/(?:@|\/)?[^/]*\/?lists?\//.test(full)) {
+          throw new Error('這是一份清單的連結，不是單一店家。請改貼清單裡每間店各自的分享連結');
+        }
         const info = parseMapsUrl(full);
         if (!info || !info.name) throw new Error('網址裡找不到店名，請改貼地圖上「分享」的連結');
         if (!info.cid) throw new Error('網址裡找不到店家編號，請改貼地圖上「分享」的連結');
