@@ -157,6 +157,35 @@ function suggestCats(name, types, catNames) {
   }
   return out;
 }
+
+// 以店名搜尋時用：清掉網頁複製來的雜訊，並比對 Google 回傳的店名像不像
+function cleanQuery(name) {
+  let n = String(name || '').replace(/[\u2600-\u27BF\uFE0F]|[\u{1F000}-\u{1FFFF}]/gu, '');
+  n = n.split(/[｜|/／]/)[0];
+  n = n.replace(/[（(][^）)]*(點餐|營業|外送|電話|售完|開幕|僅供|滿千)[^）)]*[）)]/g, '');
+  return n.replace(/\s+/g, ' ').trim();
+}
+function normName(s) {
+  return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+function nameSim(a, b) {
+  const x = normName(a);
+  const y = normName(b);
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  if ((x.length >= 2 && y.includes(x)) || (y.length >= 2 && x.includes(y))) return 0.9;
+  const bi = (t) => {
+    const set = new Set();
+    for (let i = 0; i < t.length - 1; i++) set.add(t.slice(i, i + 2));
+    return set;
+  };
+  const A = bi(x);
+  const B = bi(y);
+  if (!A.size || !B.size) return 0;
+  let hit = 0;
+  for (const g of A) if (B.has(g)) hit += 1;
+  return (2 * hit) / (A.size + B.size);
+}
 // --- logic:end ---
 
 const CORS = {
@@ -224,8 +253,9 @@ Deno.serve(async (req) => {
     if (!apiKey) return json({ error: '尚未設定 GOOGLE_PLACES_API_KEY' }, 500);
 
     const body = await req.json().catch(() => ({}));
+    const items = Array.isArray(body.items) ? body.items.slice(0, MAX_URLS) : [];
     const lines = Array.isArray(body.lines) ? body.lines.slice(0, MAX_URLS) : [];
-    if (!lines.length) return json({ error: '沒有收到連結' }, 400);
+    if (!lines.length && !items.length) return json({ error: '沒有收到連結' }, 400);
 
     const { data: areas, error: aErr } = await db.from('areas').select('id, name, county');
     if (aErr) return json({ error: `讀取地區失敗：${aErr.message}` }, 500);
@@ -233,8 +263,107 @@ Deno.serve(async (req) => {
     const { data: catRows } = await db.from('categories').select('id, name');
     const catIdByName = new Map((catRows || []).map((c) => [c.name, c.id]));
 
-    const results = [];
+
     const seen = new Set();
+    const insertPlace = async (place, cid, mapsUrl, note, label) => {
+      const roh = place.regularOpeningHours;
+      const row = {
+        name: place.displayName?.text || label,
+        address: place.formattedAddress || null,
+        lat: place.location?.latitude ?? null,
+        lng: place.location?.longitude ?? null,
+        maps_url: mapsUrl || place.googleMapsUri || null,
+        place_id: place.id,
+        google_cid: cid,
+        area_id: pickAreaId(place.formattedAddress, areas),
+        price_level: priceLevelFromRange(place.priceRange),
+        opening_hours:
+          roh && Array.isArray(roh.periods) && roh.periods.length
+            ? { periods: roh.periods, weekdayDescriptions: roh.weekdayDescriptions || [] }
+            : null,
+        hours_updated_at: new Date().toISOString(),
+        status: 'want',
+        needs_review: true,
+        note,
+      };
+      if (place.businessStatus === 'CLOSED_PERMANENTLY') {
+        row.note = row.note ? `Google 標示：已永久歇業。${row.note}` : 'Google 標示：已永久歇業';
+      }
+      const ins = await db.from('restaurants').insert(row).select('id').single();
+      if (ins.error) throw new Error(`寫入失敗：${ins.error.message}`);
+      const picked = suggestCats(row.name, place.types, [...catIdByName.keys()]);
+      if (picked.length) {
+        const link = await db
+          .from('restaurant_categories')
+          .insert(picked.map((n) => ({ restaurant_id: ins.data.id, category_id: catIdByName.get(n) })));
+        if (link.error) picked.length = 0;
+      }
+      return {
+        input: label,
+        name: row.name,
+        status: 'added',
+        message: picked.length ? `已新增，分類：${picked.join('、')}` : '已新增，沒有符合的分類，請到整理頁選',
+      };
+    };
+
+    if (items.length) {
+      const results = [];
+      for (const it of items) {
+        const label = String(it.name || '').slice(0, 60);
+        try {
+          const q = cleanQuery(it.name);
+          if (q.length < 2) throw new Error('店名太短');
+          await sleep(3500);
+          const body2 = {
+            textQuery: `新竹 ${q}`,
+            languageCode: 'zh-TW',
+            regionCode: 'TW',
+            maxResultCount: 5,
+            locationBias: { circle: { center: { latitude: 24.8, longitude: 121.0 }, radius: 30000 } },
+          };
+          const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': FIELD_MASK },
+            body: JSON.stringify(body2),
+          });
+          if (!res.ok) throw new Error(`Google ${res.status}: ${(await res.text()).slice(0, 200)}`);
+          const data = await res.json();
+          const ranked = (data.places || [])
+            .map((p) => ({ p, sim: nameSim(q, p.displayName?.text) }))
+            .sort((a, b) => b.sim - a.sim);
+          const best = ranked[0];
+          if (!best || best.sim < 0.5) {
+            const near = best ? `，最接近的是「${best.p.displayName?.text}」` : '';
+            throw new Error(`沒有對到名稱相符的店${near}`);
+          }
+          const place = best.p;
+          if (!/新竹/.test(normalizeAddr(place.formattedAddress))) {
+            throw new Error(`找到「${place.displayName?.text}」但地址不在新竹：${place.formattedAddress}`);
+          }
+          const cid = (String(place.googleMapsUri || '').match(/cid=(\d+)/) || [])[1] || null;
+          if (cid && seen.has(cid)) {
+            results.push({ input: label, name: place.displayName?.text, status: 'exists', message: '這次貼的名單裡重複了' });
+            continue;
+          }
+          if (cid) seen.add(cid);
+          const dupP = await db.from('restaurants').select('name').eq('place_id', place.id).maybeSingle();
+          const dupC = !dupP.data && cid ? await db.from('restaurants').select('name').eq('google_cid', cid).maybeSingle() : { data: null };
+          const dup = dupP.data || dupC.data;
+          if (dup) {
+            results.push({ input: label, name: dup.name, status: 'exists', message: '已經在清單裡' });
+            continue;
+          }
+          results.push(await insertPlace(place, cid, null, it.note || null, label));
+        } catch (e) {
+          const msg = String(e.message || e);
+          results.push({ input: label, status: 'failed', message: msg });
+          if (/Google (403|429)/.test(msg)) break;
+        }
+      }
+      return json({ results });
+    }
+
+    const results = [];
     for (const line of lines) {
       const parsed = parseLine(line);
       if (!parsed) {
@@ -276,45 +405,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const roh = place.regularOpeningHours;
-        const row = {
-          name: place.displayName?.text || info.name,
-          address: place.formattedAddress || null,
-          lat: place.location?.latitude ?? null,
-          lng: place.location?.longitude ?? null,
-          maps_url: parsed.url,
-          place_id: place.id,
-          google_cid: info.cid,
-          area_id: pickAreaId(place.formattedAddress, areas),
-          price_level: priceLevelFromRange(place.priceRange),
-          opening_hours:
-            roh && Array.isArray(roh.periods) && roh.periods.length
-              ? { periods: roh.periods, weekdayDescriptions: roh.weekdayDescriptions || [] }
-              : null,
-          hours_updated_at: new Date().toISOString(),
-          status: 'want',
-          needs_review: true,
-          note: parsed.note,
-        };
-        if (place.businessStatus === 'CLOSED_PERMANENTLY') {
-          row.note = row.note ? `Google 標示：已永久歇業。${row.note}` : 'Google 標示：已永久歇業';
-        }
-        const ins = await db.from('restaurants').insert(row).select('id').single();
-        if (ins.error) throw new Error(`寫入失敗：${ins.error.message}`);
-        // 依店名與 Google 的店家型態，初步分類；對不上就維持未分類
-        const picked = suggestCats(row.name, place.types, [...catIdByName.keys()]);
-        if (picked.length) {
-          const link = await db
-            .from('restaurant_categories')
-            .insert(picked.map((n) => ({ restaurant_id: ins.data.id, category_id: catIdByName.get(n) })));
-          if (link.error) picked.length = 0;
-        }
-        results.push({
-          input: label,
-          name: row.name,
-          status: 'added',
-          message: picked.length ? `已新增，分類：${picked.join('、')}` : '已新增，沒有符合的分類，請到整理頁選',
-        });
+        results.push(await insertPlace(place, info.cid, parsed.url, parsed.note, label));
       } catch (e) {
         const msg = String(e.message || e);
         results.push({ input: label, status: 'failed', message: msg });

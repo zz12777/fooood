@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
 import { toTrad } from './text.js';
 import { suggestCats } from './categorize.js';
+import { parseListText } from './listparse.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -347,6 +348,105 @@ async function addPlaces() {
   }
 }
 $('#add-btn').addEventListener('click', () => !adding && addPlaces());
+
+/* ---------- 貼清單文字新增（依店名） ---------- */
+
+const normKey = (s) => toTrad(String(s || '')).toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+let listAdding = false;
+
+$('#list-parse').addEventListener('click', () => {
+  const names = parseListText($('#list-input').value);
+  $('#list-names').value = names.join('\n');
+  const out = $('#list-log');
+  out.innerHTML = '';
+  const li = document.createElement('li');
+  li.textContent = names.length ? `解析出 ${names.length} 間。請看一下有沒有不是店名的行，刪掉再新增。` : '沒有解析出店名。';
+  out.appendChild(li);
+});
+
+async function addByNames() {
+  const names = $('#list-names')
+    .value.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!names.length) return;
+  const note = $('#list-note').value.trim() || null;
+  listAdding = true;
+  $('#list-add').disabled = true;
+  const out = $('#list-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+    li.scrollIntoView({ block: 'nearest' });
+  };
+  let added = 0;
+  let exists = 0;
+  let failed = 0;
+  const left = [];
+  try {
+    const { data: have, error } = await sb.from('restaurants').select('name').limit(5000);
+    if (error) throw new Error(error.message);
+    const haveKeys = (have || []).map((r) => normKey(r.name));
+    const todo = [];
+    for (const n of names) {
+      const k = normKey(n);
+      if (k && haveKeys.some((h) => h === k || (k.length >= 4 && (h.includes(k) || k.includes(h)) && Math.min(h.length, k.length) >= 4))) {
+        exists += 1;
+        addLog(`略過：${n}（名稱已在清單裡）`);
+      } else todo.push(n);
+    }
+    addLog(`要查詢 ${todo.length} 間，每間約 4 秒，請不要關掉這一頁。`);
+    for (let i = 0; i < todo.length; i += ADD_CHUNK) {
+      const chunk = todo.slice(i, i + ADD_CHUNK);
+      addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 筆，共 ${todo.length} 筆`);
+      const { data, error: e } = await sb.functions.invoke('add-places', {
+        body: { items: chunk.map((name) => ({ name, note })) },
+      });
+      if (e) {
+        let msg = e.message;
+        try {
+          const j = await e.context.json();
+          if (j && j.error) msg = j.error;
+        } catch {
+          /* 保留原本的訊息 */
+        }
+        throw new Error(msg);
+      }
+      const results = data.results || [];
+      results.forEach((r, k) => {
+        if (r.status === 'added') {
+          added += 1;
+          addLog(`新增：${r.name}（${r.message.replace('已新增，', '').replace('已新增', '')}）`.replace('（）', ''), 'ok');
+        } else if (r.status === 'exists') {
+          exists += 1;
+          addLog(`略過：${r.name}（${r.message}）`);
+        } else {
+          failed += 1;
+          left.push(chunk[k]);
+          addLog(`沒新增：${r.input}（${r.message}）`, 'error');
+        }
+      });
+      if (results.length < chunk.length) {
+        left.push(...chunk.slice(results.length));
+        addLog('因為 Google 額度或權限問題，剩下的先停下。', 'error');
+        left.push(...todo.slice(i + chunk.length));
+        break;
+      }
+    }
+    addLog(`結束：新增 ${added} 間，已存在 ${exists} 間，沒新增 ${failed} 間。`, failed ? 'error' : 'ok');
+    $('#list-names').value = left.join('\n');
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    listAdding = false;
+    $('#list-add').disabled = false;
+    refreshStats();
+  }
+}
+$('#list-add').addEventListener('click', () => !listAdding && addByNames());
 
 $('#brand-mark').innerHTML = mark();
 route();

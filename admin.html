@@ -83,6 +83,31 @@
         </div>
         <ol class="log" id="cat-log" aria-live="polite"></ol>
       </section>
+      <section class="panel" aria-labelledby="list-title">
+        <h2 id="list-title">貼清單文字新增店家</h2>
+        <p class="muted">
+          在 Google 地圖的清單頁全選複製，整段貼在下面，按「解析店名」。確認或修改店名後再按「依店名新增」。已經在清單裡的店會略過，不會動到原本的備註。
+        </p>
+        <label class="field field-wide">
+          <span>清單頁文字</span>
+          <textarea id="list-input" rows="5"></textarea>
+        </label>
+        <label class="field">
+          <span>替這批新增的店加上備註</span>
+          <input type="text" id="list-note" value="[Debby推薦]" />
+        </label>
+        <div class="row actions">
+          <button type="button" class="btn-secondary" id="list-parse">解析店名</button>
+        </div>
+        <label class="field field-wide">
+          <span>解析出的店名（一行一間，可以直接修改）</span>
+          <textarea id="list-names" rows="8"></textarea>
+        </label>
+        <div class="row actions">
+          <button type="button" class="btn-primary" id="list-add">依店名新增</button>
+        </div>
+        <ol class="log" id="list-log" aria-live="polite"></ol>
+      </section>
       <section class="panel" aria-labelledby="add-title">
         <h2 id="add-title">貼連結新增店家</h2>
         <p class="muted">
