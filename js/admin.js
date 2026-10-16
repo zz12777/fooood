@@ -2,6 +2,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
 import { toTrad } from './text.js';
+import { suggestCats } from './categorize.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -216,6 +217,58 @@ async function fixAddresses() {
 }
 $('#fix-btn').addEventListener('click', () => !fixing && fixAddresses());
 
+/* ---------- 自動分類未分類的店 ---------- */
+
+let catting = false;
+async function autoCategorize() {
+  catting = true;
+  $('#cat-btn').disabled = true;
+  const out = $('#cat-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+  };
+  try {
+    const [rs, cs, links] = await Promise.all([
+      sb.from('restaurants').select('id,name').limit(3000),
+      sb.from('categories').select('id,name').limit(500),
+      sb.from('restaurant_categories').select('restaurant_id').limit(10000),
+    ]);
+    for (const x of [rs, cs, links]) if (x.error) throw new Error(x.error.message);
+    const has = new Set(links.data.map((l) => l.restaurant_id));
+    const idByName = new Map(cs.data.map((c) => [c.name, c.id]));
+    const names = [...idByName.keys()];
+    const todo = rs.data.filter((r) => !has.has(r.id));
+    if (!todo.length) {
+      addLog('每一間都已經有分類了。', 'ok');
+      return;
+    }
+    const rows = [];
+    let hit = 0;
+    for (const r of todo) {
+      const picked = suggestCats(r.name, [], names);
+      if (!picked.length) continue;
+      hit += 1;
+      for (const n of picked) rows.push({ restaurant_id: r.id, category_id: idByName.get(n) });
+      addLog(`${r.name}：${picked.join('、')}`);
+    }
+    if (rows.length) {
+      const { error } = await sb.from('restaurant_categories').insert(rows);
+      if (error) throw new Error(error.message);
+    }
+    addLog(`完成：${todo.length} 間未分類，分好 ${hit} 間，${todo.length - hit} 間對不上，留在未分類。`, 'ok');
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    catting = false;
+    $('#cat-btn').disabled = false;
+  }
+}
+$('#cat-btn').addEventListener('click', () => !catting && autoCategorize());
+
 /* ---------- 貼連結新增 ---------- */
 
 const ADD_CHUNK = 6;
@@ -265,7 +318,7 @@ async function addPlaces() {
       results.forEach((r, k) => {
         if (r.status === 'added') {
           added += 1;
-          addLog(`新增：${r.name}`, 'ok');
+          addLog(`新增：${r.name}（${r.message.replace('已新增，', '').replace('已新增', '')}）`.replace('（）', ''), 'ok');
         } else if (r.status === 'exists') {
           exists += 1;
           addLog(`略過：${r.name}（${r.message}）`);
