@@ -61,3 +61,11 @@ export function countyFromAddress(addr) {
   }
   return best;
 }
+
+// 篩選與卡片上顯示的地區名：新竹市的區前面加上「新竹」，其他縣市去掉市與縣（嘉義市、嘉義縣合成「嘉義」）
+export function areaLabel(name, county) {
+  return county === '新竹市' && !String(name).startsWith('新竹') ? `新竹${name}` : name;
+}
+export function shortCounty(county) {
+  return String(county || '').replace(/[市縣]$/, '');
+}

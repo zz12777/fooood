@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
-import { linkify, cleanAddress, countyFromAddress, toTrad } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, toTrad, areaLabel, shortCounty } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -106,7 +106,7 @@ function normalize(row) {
     note: row.note || '',
     hours: row.opening_hours || null,
     needsReview: !!row.needs_review,
-    area: row.area ? row.area.name : '',
+    area: row.area ? areaLabel(row.area.name, row.area.county) : '',
     county: row.area ? row.area.county : '',
     cats: (row.cats || []).map((c) => c.category && c.category.name).filter(Boolean),
     links: row.links || [],
@@ -116,17 +116,17 @@ function normalize(row) {
 // 新竹以外的店：用地址判斷縣市，篩選與卡片都顯示縣市名（例如台南市），不再是籠統的「其他地區」
 function withCounty(r) {
   if (r.county !== '其他') return r;
-  return { ...r, area: countyFromAddress(r.address) || '其他縣市', county: '其他縣市' };
+  return { ...r, area: shortCounty(countyFromAddress(r.address)) || '其他', county: '其他縣市' };
 }
 
 async function loadData() {
-  if (DEMO) return { restaurants: SAMPLE.restaurants.map(withCounty), areas: SAMPLE.areas, cats: SAMPLE.cats };
+  if (DEMO) return { restaurants: SAMPLE.restaurants.map((r) => withCounty({ ...r, area: areaLabel(r.area, r.county) })), areas: SAMPLE.areas.map((a) => ({ ...a, name: areaLabel(a.name, a.county) })), cats: SAMPLE.cats };
   const [rows, areas, cats] = await Promise.all([
     rest(SELECT),
     rest('areas?select=name,county&order=sort_order'),
     rest('categories?select=name&order=sort_order'),
   ]);
-  return { restaurants: rows.map(normalize).map(withCounty), areas, cats };
+  return { restaurants: rows.map(normalize).map(withCounty), areas: areas.map((a) => ({ ...a, name: areaLabel(a.name, a.county) })), cats };
 }
 
 /* ---------- 篩選 ---------- */

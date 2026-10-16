@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
-import { linkify, cleanAddress } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, areaLabel, shortCounty } from './text.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -88,7 +88,11 @@ function cardHtml(r) {
         `<button type="button" class="chip chip-prices" data-act="price" data-v="${p}" aria-pressed="${r.price_level === p}">${'$'.repeat(p)}　${PRICE_TEXT[p]}</button>`
     )
     .join('');
-  const area = r.area ? r.area.name : '未分區';
+  const area = !r.area
+    ? '未分區'
+    : r.area.county === '其他'
+      ? shortCounty(countyFromAddress(r.address)) || '其他'
+      : areaLabel(r.area.name, r.area.county);
   const link = r.maps_url ? `<a href="${esc(r.maps_url)}" target="_blank" rel="noopener">Google Map</a>` : '';
   const addr = r.address ? `<p class="rcard-addr">${esc(cleanAddress(r.address))}</p>` : '';
   return `
