@@ -634,13 +634,18 @@ main {
 }
 
 .addr {
-  color: var(--ink-soft);
-  font-size: 0.875rem;
+  color: #6f7064;
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
   overflow-wrap: anywhere;
 }
 .note {
-  color: var(--ink-soft);
+  padding: 8px 12px;
+  color: var(--ink);
   font-size: 0.9375rem;
+  background: var(--yellow-soft);
+  border-left: 4px solid var(--yellow);
+  border-radius: 4px var(--radius-s) var(--radius-s) 4px;
   overflow-wrap: anywhere;
 }
 .note-link {

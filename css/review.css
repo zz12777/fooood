@@ -153,3 +153,18 @@
   outline: 3px solid var(--blue-deep);
   outline-offset: 2px;
 }
+
+.cat-groups {
+  display: grid;
+  gap: 10px;
+}
+.cat-sub {
+  display: grid;
+  gap: 6px;
+}
+.cat-sub .county-name {
+  font-size: 0.8125rem;
+}
+.rcard-addr {
+  color: #6f7064;
+}

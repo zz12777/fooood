@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
-import { linkify, cleanAddress, countyFromAddress, toTrad, areaLabel, shortCounty } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, toTrad, areaLabel, shortCounty, groupCats } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -246,9 +246,13 @@ function renderFilterChips() {
     .map((p) => chip('prices', p, `${'$'.repeat(p)}　${PRICE_TEXT[p]}`, priceCount.get(p)))
     .join('');
 
-  $('#filter-cats').innerHTML = state.cats
-    .filter((c) => catCount.get(c.name))
-    .map((c) => chip('cats', c.name, c.name, catCount.get(c.name)))
+  $('#filter-cats').innerHTML = groupCats(state.cats.filter((c) => catCount.get(c.name)))
+    .map(
+      ([group, list]) =>
+        `<div class="county"><span class="county-name">${esc(group)}</span><div class="chips">${list
+          .map((c) => chip('cats', c.name, c.name, catCount.get(c.name)))
+          .join('')}</div></div>`
+    )
     .join('');
 }
 
@@ -334,7 +338,7 @@ function updateDrawHint() {
 }
 
 function doDraw() {
-  const { list, unknown } = drawPool();
+  const { list } = drawPool();
   const out = $('#draw-result');
   const note = $('#draw-note');
   if (list.length === 0) return;
@@ -355,7 +359,6 @@ function doDraw() {
   out.classList.add('is-fresh');
 
   const parts = [`從符合條件的店裡抽出 ${picked.length} 間。`];
-  if (state.draw.openOnly && unknown > 0) parts.push(`有 ${unknown} 間沒有營業時間資料，這次先跳過。`);
   note.textContent = parts.join('');
 
   state.draw.drawn = true;

@@ -69,3 +69,16 @@ export function areaLabel(name, county) {
 export function shortCounty(county) {
   return String(county || '').replace(/[市縣]$/, '');
 }
+
+// 類別分三群：名稱有「式」的是什麼式（日式、越式、台式小吃…），吃飯時段是時間，其餘是品項
+export const CAT_GROUPS = ['什麼式', '時間', '品項'];
+const TIME_CATS = ['早餐', '午餐', '晚餐', '早午餐', '下午茶', '宵夜'];
+export function catGroup(name) {
+  if (TIME_CATS.includes(name)) return '時間';
+  if (String(name).includes('式')) return '什麼式';
+  return '品項';
+}
+// 把類別清單依三群分好，空的群不回傳
+export function groupCats(cats, nameOf = (c) => c.name) {
+  return CAT_GROUPS.map((g) => [g, cats.filter((c) => catGroup(nameOf(c)) === g)]).filter(([, list]) => list.length);
+}

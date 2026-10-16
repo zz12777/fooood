@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
-import { linkify, cleanAddress, countyFromAddress, areaLabel, shortCounty } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, areaLabel, shortCounty, groupCats } from './text.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -76,10 +76,15 @@ function renderStats() {
 }
 
 function cardHtml(r) {
-  const catChips = state.cats
+  const catChips = groupCats(state.cats)
     .map(
-      (c) =>
-        `<button type="button" class="chip chip-cats" data-act="cat" data-id="${c.id}" aria-pressed="${r.catIds.has(c.id)}">${esc(c.name)}</button>`
+      ([group, list]) =>
+        `<div class="cat-sub"><span class="county-name">${esc(group)}</span><div class="chips">${list
+          .map(
+            (c) =>
+              `<button type="button" class="chip chip-cats" data-act="cat" data-id="${c.id}" aria-pressed="${r.catIds.has(c.id)}">${esc(c.name)}</button>`
+          )
+          .join('')}</div></div>`
     )
     .join('');
   const priceChips = [1, 2, 3, 4]
@@ -105,7 +110,7 @@ function cardHtml(r) {
       </div>
       <span class="saved" aria-live="polite"></span>
     </div>
-    <div class="rgroup"><h4>類別（可複選）</h4><div class="chips">${catChips}</div>
+    <div class="rgroup"><h4>類別（可複選）</h4><div class="cat-groups">${catChips}</div>
       <form class="cat-add" data-act="cat-add">
         <input type="text" name="name" maxlength="12" placeholder="沒有想要的類別？打字新增" autocomplete="off" aria-label="新增類別">
         <button type="submit" class="btn-secondary">新增並選取</button>
