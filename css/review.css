@@ -72,8 +72,8 @@
   color: var(--ink-soft);
 }
 .rcard .chip {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 12px;
 }
 .rcard textarea {
   width: 100%;
