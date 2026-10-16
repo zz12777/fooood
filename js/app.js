@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
-import { linkify, cleanAddress, countyFromAddress } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, toTrad } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -99,7 +99,7 @@ function normalize(row) {
   return {
     id: row.id,
     name: row.name,
-    address: row.address || '',
+    address: toTrad(row.address || ''),
     mapsUrl: row.maps_url,
     price: row.price_level || null,
     status: row.status,

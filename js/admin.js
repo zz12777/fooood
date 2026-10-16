@@ -1,6 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
+import { toTrad } from './text.js';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -171,6 +172,49 @@ $('#dry-btn').addEventListener('click', () => !running && dryRun());
 $('#stop-btn').addEventListener('click', () => {
   stopRequested = true;
 });
+
+/* ---------- 統一地址為繁體 ---------- */
+
+let fixing = false;
+async function fixAddresses() {
+  fixing = true;
+  $('#fix-btn').disabled = true;
+  const out = $('#fix-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+  };
+  try {
+    const { data, error } = await sb.from('restaurants').select('id,name,address').limit(2000);
+    if (error) throw new Error(error.message);
+    const todo = data.filter((r) => r.address && toTrad(r.address) !== r.address);
+    if (!todo.length) {
+      addLog(`檢查了 ${data.length} 間，地址都已經是繁體。`, 'ok');
+      return;
+    }
+    let done = 0;
+    for (const r of todo) {
+      const next = toTrad(r.address);
+      const { error: e } = await sb.from('restaurants').update({ address: next }).eq('id', r.id);
+      if (e) {
+        addLog(`失敗：${r.name}（${e.message}）`, 'error');
+        continue;
+      }
+      done += 1;
+      addLog(`${r.name}：${next}`);
+    }
+    addLog(`完成：檢查 ${data.length} 間，改了 ${done} 間。`, done === todo.length ? 'ok' : 'error');
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    fixing = false;
+    $('#fix-btn').disabled = false;
+  }
+}
+$('#fix-btn').addEventListener('click', () => !fixing && fixAddresses());
 
 /* ---------- 貼連結新增 ---------- */
 
