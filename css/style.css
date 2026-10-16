@@ -465,10 +465,11 @@ main {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 34px;
-  padding: 0 11px;
-  font-size: 0.9375rem;
+  gap: 3px;
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 0.875rem;
+  line-height: 1.2;
   background: var(--paper);
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -480,7 +481,7 @@ main {
 }
 .chip .n {
   color: var(--ink-soft);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
 }
 .chip:hover {
   border-color: var(--ink-soft);
