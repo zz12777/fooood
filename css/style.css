@@ -429,8 +429,21 @@ main {
   align-content: start;
 }
 .group h3 {
-  font-size: 1rem;
-  color: var(--ink-soft);
+  justify-self: start;
+  padding: 0 4px;
+  font-size: 1.375rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: linear-gradient(transparent 58%, var(--mark, var(--yellow)) 58%);
+}
+.filters-body .group:nth-child(1) h3 {
+  --mark: var(--blue);
+}
+.filters-body .group:nth-child(2) h3 {
+  --mark: var(--yellow);
+}
+.filters-body .group:nth-child(3) h3 {
+  --mark: var(--green);
 }
 .county {
   display: grid;

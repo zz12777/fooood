@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
-import { linkify, cleanAddress } from './text.js';
+import { linkify, cleanAddress, countyFromAddress } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -113,14 +113,20 @@ function normalize(row) {
   };
 }
 
+// 新竹以外的店：用地址判斷縣市，篩選與卡片都顯示縣市名（例如台南市），不再是籠統的「其他地區」
+function withCounty(r) {
+  if (r.county !== '其他') return r;
+  return { ...r, area: countyFromAddress(r.address) || '其他縣市', county: '其他縣市' };
+}
+
 async function loadData() {
-  if (DEMO) return { restaurants: SAMPLE.restaurants, areas: SAMPLE.areas, cats: SAMPLE.cats };
+  if (DEMO) return { restaurants: SAMPLE.restaurants.map(withCounty), areas: SAMPLE.areas, cats: SAMPLE.cats };
   const [rows, areas, cats] = await Promise.all([
     rest(SELECT),
     rest('areas?select=name,county&order=sort_order'),
     rest('categories?select=name&order=sort_order'),
   ]);
-  return { restaurants: rows.map(normalize), areas, cats };
+  return { restaurants: rows.map(normalize).map(withCounty), areas, cats };
 }
 
 /* ---------- 篩選 ---------- */
@@ -209,11 +215,20 @@ function renderFilterChips() {
 
   const byCounty = {};
   state.areas.forEach((a) => {
-    if (!areaCount.get(a.name)) return;
+    if (a.county === '其他' || !areaCount.get(a.name)) return;
     (byCounty[a.county] ||= []).push(a);
   });
-  // 「其他」放最後，新竹市、新竹縣在前
-  const countyOrder = ['新竹市', '新竹縣', '其他'];
+  // 新竹以外的縣市依店數多到少排列，放在最後
+  const others = new Map();
+  state.all.forEach((r) => {
+    if (r.county === '其他縣市' && r.area) others.set(r.area, (others.get(r.area) || 0) + 1);
+  });
+  if (others.size) {
+    byCounty['其他縣市'] = [...others.entries()]
+      .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], 'zh-Hant'))
+      .map(([name]) => ({ name, county: '其他縣市' }));
+  }
+  const countyOrder = ['新竹市', '新竹縣', '其他縣市'];
   const orderedCounties = Object.entries(byCounty).sort(
     (x, y) => countyOrder.indexOf(x[0]) - countyOrder.indexOf(y[0])
   );
@@ -407,7 +422,7 @@ function setupStatic() {
   $('#draw-art').innerHTML = bowl();
   $('#search-icon').innerHTML = icon.search(18);
   $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選地區、價位、類別</span>`;
-  $('#draw-btn').innerHTML = `${icon.dice(20)}<span id="draw-label">抽一抽</span>`;
+  $('#draw-btn').innerHTML = `${icon.dice(20)}<span id="draw-label">抽三間幸運店家</span>`;
   // 桌面寬度預設展開篩選區
   if (window.matchMedia('(min-width: 900px)').matches) $('#filters').open = true;
 }

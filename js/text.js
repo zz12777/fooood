@@ -34,3 +34,22 @@ export function cleanAddress(addr) {
     .replace(/^(台灣|臺灣)\s*/, '')
     .replace(/[县乡镇东关丰宝横区兴号楼层园广]/g, (c) => map[c]);
 }
+
+// 從地址判斷是哪個縣市（只用在新竹以外的店）。臺統一寫成台，簡體的縣先轉成繁體。
+const COUNTIES = [
+  '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣', '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣',
+  '嘉義市', '嘉義縣', '台南市', '高雄市', '屏東縣', '宜蘭縣', '花蓮縣', '台東縣', '澎湖縣', '金門縣', '連江縣',
+];
+export function countyFromAddress(addr) {
+  const a = String(addr || '').replace(/臺/g, '台').replace(/县/g, '縣');
+  let best = null;
+  let bestAt = Infinity;
+  for (const c of COUNTIES) {
+    const i = a.indexOf(c);
+    if (i >= 0 && i < bestAt) {
+      best = c;
+      bestAt = i;
+    }
+  }
+  return best;
+}

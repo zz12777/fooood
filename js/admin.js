@@ -54,6 +54,14 @@ $('#login-form').addEventListener('submit', async (e) => {
   const status = $('#login-status');
   const btn = $('#login-btn');
   btn.disabled = true;
+  say(status, '確認中');
+  // 先比對白名單：不在名單內的信箱，不會寄出登入信
+  const check = await sb.rpc('email_allowed', { p_email: email });
+  if (!check.error && check.data === false) {
+    btn.disabled = false;
+    say(status, '這個信箱沒有管理權限，所以不會寄出登入連結。', 'error');
+    return;
+  }
   say(status, '寄送中');
   const redirect = location.origin + location.pathname;
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } });

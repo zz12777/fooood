@@ -35,5 +35,7 @@ export const SAMPLE = {
     { id: 's12', name: '示範高級鐵板燒', area: '竹北市', county: '新竹縣', price: 4, status: 'want', cats: ['日式'], note: '示範備註：留給紀念日。', hours: hours(daily(17, 22)), mapsUrl: MAP, links: [] },
     { id: 's13', name: '示範小吃攤', area: '東區', county: '新竹市', price: 1, status: 'want', cats: ['麵', '宵夜'], note: '', hours: hours(daily(17, 1, true)), mapsUrl: MAP, links: [] },
     { id: 's14', name: '尚未分類的示範店', area: '香山區', county: '新竹市', price: null, status: 'want', cats: [], note: '示範備註：還沒補上類別與價位。', hours: null, needsReview: true, mapsUrl: MAP, links: [] },
+    { id: 's15', name: '示範台南小吃', area: '其他地區', county: '其他', address: '台南市中西區示範路 3 號', price: 1, status: 'want', cats: ['小吃'], note: '', hours: null, mapsUrl: MAP, links: [] },
+    { id: 's16', name: '示範台中甜點', area: '其他地區', county: '其他', address: '403台灣台中市西區示範街 5 號', price: 2, status: 'want', cats: ['冰品甜點'], note: '', hours: null, mapsUrl: MAP, links: [] },
   ],
 };
