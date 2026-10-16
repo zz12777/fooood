@@ -314,7 +314,7 @@ function updateDrawHint() {
       ? '目前沒有符合條件的店，放寬篩選或關掉開關再試試。'
       : state.draw.drawn
         ? ''
-        : '想縮小範圍，可以先在下方選擇地區、價位或類別。';
+        : '若想縮小範圍，可先在下方選擇地區、價位或類別。';
   btn.disabled = list.length === 0;
 }
 
