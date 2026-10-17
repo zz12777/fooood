@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
-import { linkify, cleanAddress, countyFromAddress, toTrad, areaLabel, shortCounty, groupCats } from './text.js';
+import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');

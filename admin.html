@@ -64,12 +64,12 @@
         <ol class="log" id="log" aria-live="polite"></ol>
       </section>
       <section class="panel" aria-labelledby="fix-title">
-        <h2 id="fix-title">統一地址為繁體</h2>
+        <h2 id="fix-title">整理地址與地區</h2>
         <p class="muted">
-          Google 有些店家的地址是簡體字。按下去會把資料庫裡的簡體地址改成繁體，已經是繁體的不會動。新增店家之後有簡體再按一次即可。
+          會把簡體地址改成繁體，把順序顛倒的地址（例如「No. 20, 成功一街鹿場里竹北市新竹縣」）改回正常，並重新判斷被歸在「其他地區」的店。新增店家之後再按一次即可。
         </p>
         <div class="row actions">
-          <button type="button" class="btn-secondary" id="fix-btn">檢查並統一地址</button>
+          <button type="button" class="btn-secondary" id="fix-btn">檢查並整理</button>
         </div>
         <ol class="log" id="fix-log" aria-live="polite"></ol>
       </section>
@@ -125,6 +125,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261016"></script>
+  <script type="module" src="js/admin.js?v=20261017"></script>
 </body>
 </html>

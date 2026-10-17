@@ -43,6 +43,26 @@ export function cleanAddress(addr) {
     .replace(/^(台灣|臺灣)\s*/, '');
 }
 
+
+// Google 偶爾會回傳「由小到大」的英文順序地址，例如
+// 「No. 20, 成功一街鹿場里竹北市新竹縣30244」，這裡改回「新竹縣竹北市鹿場里成功一街20號」。
+// 不是這種格式的地址原樣回傳。
+export function fixAddressOrder(addr) {
+  const a = toTrad(String(addr || '')).trim();
+  const m = a.match(/^No\.?\s*([^,，]+?)\s*[,，]\s*(.+?)\s*(\d{3,6})?$/i);
+  if (!m) return a;
+  const num = /號/.test(m[1]) ? m[1] : `${m[1]}號`;
+  const rest = m[2];
+  const cm = rest.match(/^(.*?)((?:新竹|台北|臺北|新北|基隆|桃園|苗栗|台中|臺中|彰化|南投|雲林|嘉義|台南|臺南|高雄|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)[市縣])$/);
+  if (!cm) return a;
+  const dm = cm[1].match(/^(.*?)(東區|北區|香山區|竹北市|竹東鎮|新埔鎮|關西鎮|湖口鄉|新豐鄉|芎林鄉|橫山鄉|北埔鄉|寶山鄉|峨眉鄉|五峰鄉|尖石鄉)$/);
+  if (!dm) return a;
+  const body = dm[1];
+  const vm = body.match(/^(.+?[路街道段巷弄])(.*[里村])$/);
+  const street = vm ? `${vm[2]}${vm[1]}` : body;
+  return `${cm[2]}${dm[2]}${street}${num}`;
+}
+
 // 從地址判斷是哪個縣市（只用在新竹以外的店）。臺統一寫成台，簡體的縣先轉成繁體。
 const COUNTIES = [
   '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣', '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣',

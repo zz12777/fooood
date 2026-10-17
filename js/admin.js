@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
-import { toTrad } from './text.js';
+import { toTrad, fixAddressOrder } from './text.js';
 import { suggestCats } from './categorize.js';
 import { parseListText } from './listparse.js';
 
@@ -190,23 +190,48 @@ async function fixAddresses() {
     out.appendChild(li);
   };
   try {
-    const { data, error } = await sb.from('restaurants').select('id,name,address').limit(2000);
-    if (error) throw new Error(error.message);
-    const todo = data.filter((r) => r.address && toTrad(r.address) !== r.address);
+    const [rs, ar] = await Promise.all([
+      sb.from('restaurants').select('id,name,address,area_id').limit(3000),
+      sb.from('areas').select('id,name,county').limit(200),
+    ]);
+    if (rs.error) throw new Error(rs.error.message);
+    if (ar.error) throw new Error(ar.error.message);
+    const data = rs.data;
+    const other = ar.data.find((x) => x.name === '其他地區');
+    const areaOf = (addr) => {
+      const t = String(addr || '').replace(/臺/g, '台');
+      const hit = ar.data.find((x) => x.county !== '其他' && t.includes(x.county + x.name));
+      return hit ? hit.id : other ? other.id : null;
+    };
+    const plan = new Map();
+    for (const r of data) {
+      if (!r.address) continue;
+      const next = fixAddressOrder(r.address);
+      const upd = {};
+      if (next !== r.address) upd.address = next;
+      // 只修「現在被歸在其他地區或沒有地區」的店，避免動到你手動調整過的
+      if (!r.area_id || r.area_id === other?.id) {
+        const id = areaOf(next);
+        if (id && id !== r.area_id) upd.area_id = id;
+      }
+      if (Object.keys(upd).length) plan.set(r.id, upd);
+    }
+    const todo = data.filter((r) => plan.has(r.id));
     if (!todo.length) {
-      addLog(`檢查了 ${data.length} 間，地址都已經是繁體。`, 'ok');
+      addLog(`檢查了 ${data.length} 間，地址和地區都沒有需要修的。`, 'ok');
       return;
     }
     let done = 0;
     for (const r of todo) {
-      const next = toTrad(r.address);
-      const { error: e } = await sb.from('restaurants').update({ address: next }).eq('id', r.id);
+      const upd = plan.get(r.id);
+      const next = upd.address || r.address;
+      const { error: e } = await sb.from('restaurants').update(upd).eq('id', r.id);
       if (e) {
         addLog(`失敗：${r.name}（${e.message}）`, 'error');
         continue;
       }
       done += 1;
-      addLog(`${r.name}：${next}`);
+      addLog(`${r.name}：${next}${upd.area_id ? '（已重新判斷地區）' : ''}`);
     }
     addLog(`完成：檢查 ${data.length} 間，改了 ${done} 間。`, done === todo.length ? 'ok' : 'error');
   } catch (e) {

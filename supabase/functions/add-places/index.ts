@@ -186,6 +186,25 @@ function nameSim(a, b) {
   for (const g of A) if (B.has(g)) hit += 1;
   return (2 * hit) / (A.size + B.size);
 }
+
+// Google 偶爾會回傳「由小到大」的英文順序地址，例如
+// 「No. 20, 成功一街鹿場里竹北市新竹縣30244」，這裡改回「新竹縣竹北市鹿場里成功一街20號」。
+// 不是這種格式的地址原樣回傳。
+function fixAddressOrder(addr) {
+  const a = String(addr || '').trim();
+  const m = a.match(/^No\.?\s*([^,，]+?)\s*[,，]\s*(.+?)\s*(\d{3,6})?$/i);
+  if (!m) return a;
+  const num = /號/.test(m[1]) ? m[1] : `${m[1]}號`;
+  const rest = m[2];
+  const cm = rest.match(/^(.*?)((?:新竹|台北|臺北|新北|基隆|桃園|苗栗|台中|臺中|彰化|南投|雲林|嘉義|台南|臺南|高雄|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|連江)[市縣])$/);
+  if (!cm) return a;
+  const dm = cm[1].match(/^(.*?)(東區|北區|香山區|竹北市|竹東鎮|新埔鎮|關西鎮|湖口鄉|新豐鄉|芎林鄉|橫山鄉|北埔鄉|寶山鄉|峨眉鄉|五峰鄉|尖石鄉)$/);
+  if (!dm) return a;
+  const body = dm[1];
+  const vm = body.match(/^(.+?[路街道段巷弄])(.*[里村])$/);
+  const street = vm ? `${vm[2]}${vm[1]}` : body;
+  return `${cm[2]}${dm[2]}${street}${num}`;
+}
 // --- logic:end ---
 
 const CORS = {
@@ -269,13 +288,13 @@ Deno.serve(async (req) => {
       const roh = place.regularOpeningHours;
       const row = {
         name: place.displayName?.text || label,
-        address: place.formattedAddress || null,
+        address: place.formattedAddress ? fixAddressOrder(place.formattedAddress) : null,
         lat: place.location?.latitude ?? null,
         lng: place.location?.longitude ?? null,
         maps_url: mapsUrl || place.googleMapsUri || null,
         place_id: place.id,
         google_cid: cid,
-        area_id: pickAreaId(place.formattedAddress, areas),
+        area_id: pickAreaId(fixAddressOrder(place.formattedAddress), areas),
         price_level: priceLevelFromRange(place.priceRange),
         opening_hours:
           roh && Array.isArray(roh.periods) && roh.periods.length
