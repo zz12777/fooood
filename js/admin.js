@@ -177,6 +177,35 @@ $('#stop-btn').addEventListener('click', () => {
   stopRequested = true;
 });
 
+/* ---------- 共用：回傳筆數不足的說明，以及把待處理的內容記在這台瀏覽器 ---------- */
+
+function shortReason(results, sent) {
+  const last = results.length ? String(results[results.length - 1].message || '') : '';
+  if (/Google (403|429)/.test(last)) return 'Google 額度或權限出了問題，剩下的先停下。請看上一行的錯誤訊息。';
+  return `送出 ${sent} 筆，只收到 ${results.length} 筆結果，沒收到結果的先留在文字框。可能是 add-places 還沒更新到最新版，請重新部署後再試。`;
+}
+
+// 沒處理完的內容存在這台瀏覽器，重新開頁面還在
+function keepText(sel, key) {
+  const el = $(sel);
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved && !el.value) el.value = saved;
+  } catch {
+    /* 瀏覽器不讓存就算了 */
+  }
+  const save = () => {
+    try {
+      if (el.value.trim()) localStorage.setItem(key, el.value);
+      else localStorage.removeItem(key);
+    } catch {
+      /* 同上 */
+    }
+  };
+  el.addEventListener('input', save);
+  return save;
+}
+
 /* ---------- 抽查營業時間 ---------- */
 
 let rechecking = false;
@@ -391,13 +420,14 @@ async function addPlaces() {
       if (results.length < chunk.length) {
         failed += chunk.length - results.length;
         failedLines.push(...chunk.slice(results.length));
-        addLog('因為 Google 額度或權限問題，剩下的先停下。', 'error');
+        addLog(shortReason(results, chunk.length), 'error');
         break;
       }
     }
     addLog(`結束：新增 ${added} 間，已存在 ${exists} 間，失敗 ${failed} 間。`, failed ? 'error' : 'ok');
     // 只留下失敗的，方便修正後再按一次
     $('#add-input').value = failedLines.join('\n');
+    saveAdd();
   } catch (e) {
     addLog(`失敗：${e.message}`, 'error');
   } finally {
@@ -416,6 +446,7 @@ let listAdding = false;
 $('#list-parse').addEventListener('click', () => {
   const names = parseListText($('#list-input').value);
   $('#list-names').value = names.join('\n');
+  saveNames();
   const out = $('#list-log');
   out.innerHTML = '';
   const li = document.createElement('li');
@@ -490,13 +521,14 @@ async function addByNames() {
       });
       if (results.length < chunk.length) {
         left.push(...chunk.slice(results.length));
-        addLog('因為 Google 額度或權限問題，剩下的先停下。', 'error');
+        addLog(shortReason(results, chunk.length), 'error');
         left.push(...todo.slice(i + chunk.length));
         break;
       }
     }
     addLog(`結束：新增 ${added} 間，已存在 ${exists} 間，沒新增 ${failed} 間。`, failed ? 'error' : 'ok');
     $('#list-names').value = left.join('\n');
+    saveNames();
   } catch (e) {
     addLog(`失敗：${e.message}`, 'error');
   } finally {
@@ -506,6 +538,9 @@ async function addByNames() {
   }
 }
 $('#list-add').addEventListener('click', () => !listAdding && addByNames());
+
+const saveAdd = keepText('#add-input', 'fooood:pending-links');
+const saveNames = keepText('#list-names', 'fooood:pending-names');
 
 $('#brand-mark').innerHTML = mark();
 route();
