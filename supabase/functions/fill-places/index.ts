@@ -75,6 +75,37 @@ function buildUpdate(place, existingNote) {
   }
   return upd;
 }
+
+// 營業時間是否有變：比較每週時段，空值視為沒有資料
+function hoursKey(oh) {
+  const periods = oh && Array.isArray(oh.periods) ? oh.periods : [];
+  return JSON.stringify(
+    periods
+      .map((p) => [p.open?.day, p.open?.hour, p.open?.minute, p.close?.day, p.close?.hour, p.close?.minute])
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+  );
+}
+function hoursChanged(oldOh, newOh) {
+  return hoursKey(oldOh) !== hoursKey(newOh);
+}
+
+// 抽查名單：一部分給「發現改過時間」的店（改最多、最久沒查的優先），其餘從最久沒查的店裡隨機抽
+function pickRecheck(rows, limit, rnd = Math.random) {
+  const byOld = (a, b) => String(a.hours_updated_at || '').localeCompare(String(b.hours_updated_at || ''));
+  const frequent = rows
+    .filter((r) => (r.hours_change_count || 0) > 0)
+    .sort((a, b) => b.hours_change_count - a.hours_change_count || byOld(a, b))
+    .slice(0, Math.ceil(limit * 0.4));
+  const taken = new Set(frequent.map((r) => r.id));
+  const rest = rows.filter((r) => !taken.has(r.id)).sort(byOld);
+  const need = limit - frequent.length;
+  const pool = rest.slice(0, Math.max(need * 4, need));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return [...frequent, ...pool.slice(0, need)];
+}
 // --- logic:end ---
 
 const CORS = {
@@ -145,6 +176,53 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const limit = Math.max(1, Math.min(MAX_PER_CALL, Number(body.limit) || DEFAULT_PER_CALL));
     const dryRun = body.dryRun === true;
+
+    // 抽查模式：隨機抽幾間已經查過的店，重抓營業時間，有變才更新
+    if (body.mode === 'recheck') {
+      const n = Math.max(1, Math.min(15, Number(body.limit) || 10));
+      const { data: pool, error: pErr } = await userClient
+        .from('restaurants')
+        .select('id, name, lat, lng, note, place_id, google_cid, opening_hours, price_level, hours_change_count, hours_updated_at')
+        .not('hours_updated_at', 'is', null)
+        .not('lat', 'is', null)
+        .order('hours_updated_at', { ascending: true })
+        .limit(400);
+      if (pErr) return json({ error: `查詢失敗：${pErr.message}` }, 500);
+      const picks = pickRecheck(pool || [], n);
+      if (dryRun) return json({ dryRun: true, wouldProcess: picks.map((r) => r.name), remaining: (pool || []).length });
+      if (!apiKey) return json({ error: '尚未設定 GOOGLE_PLACES_API_KEY' }, 500);
+      const changed = [];
+      const same = [];
+      const notFound = [];
+      const failed = [];
+      for (const r of picks) {
+        await new Promise((ok) => setTimeout(ok, 3500));
+        try {
+          const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
+          const places = data.places || [];
+          const place =
+            places.find((p) => r.place_id && p.id === r.place_id) ||
+            places.find((p) => r.google_cid && String(p.googleMapsUri || '').includes(`cid=${r.google_cid}`)) ||
+            pickNearest(places, r.lat, r.lng, MATCH_RADIUS_M)?.place;
+          if (!place) {
+            notFound.push(r.name);
+            continue;
+          }
+          const upd = buildUpdate(place, r.note);
+          delete upd.address; // 抽查只更新營業時間、價位與歇業標記，不動地址
+          delete upd.place_id;
+          const isChanged = hoursChanged(r.opening_hours, upd.opening_hours);
+          if (isChanged) upd.hours_change_count = (r.hours_change_count || 0) + 1;
+          const { error: uErr } = await userClient.from('restaurants').update(upd).eq('id', r.id);
+          if (uErr) throw new Error(uErr.message);
+          (isChanged ? changed : same).push(r.name);
+        } catch (e) {
+          failed.push({ name: r.name, error: String(e.message || e) });
+          if (/Google (403|429)/.test(String(e.message))) break;
+        }
+      }
+      return json({ mode: 'recheck', checked: changed.length + same.length, changed, same, notFound, failed });
+    }
 
     // 3. 找出還沒查過的店
     const { data: todo, error: qErr } = await userClient

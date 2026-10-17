@@ -93,6 +93,8 @@ async function refreshStats() {
     .is('hours_updated_at', null);
   $('#stat-total').textContent = total.error ? '讀取失敗' : `${total.count} 間`;
   $('#stat-todo').textContent = todo.error ? '讀取失敗' : `${todo.count} 間`;
+  const changed = await sb.from('restaurants').select('id', { count: 'exact', head: true }).gte('hours_change_count', 1);
+  $('#stat-changed').textContent = changed.error ? '尚未啟用' : `${changed.count} 間`;
   return todo.count;
 }
 
@@ -175,7 +177,39 @@ $('#stop-btn').addEventListener('click', () => {
   stopRequested = true;
 });
 
-/* ---------- 統一地址為繁體 ---------- */
+/* ---------- 抽查營業時間 ---------- */
+
+let rechecking = false;
+$('#recheck-btn').addEventListener('click', async () => {
+  if (rechecking) return;
+  rechecking = true;
+  $('#recheck-btn').disabled = true;
+  const out = $('#recheck-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+  };
+  try {
+    addLog('抽查中，約需 40 秒，請不要關掉這一頁。');
+    const r = await callFill({ mode: 'recheck', limit: 10 });
+    addLog(`抽查 ${r.checked} 間：營業時間有變 ${r.changed.length} 間，沒變 ${r.same.length} 間。`, 'ok');
+    if (r.changed.length) addLog(`有變而且已更新：${r.changed.join('、')}`);
+    if (r.same.length) addLog(`沒變：${r.same.join('、')}`);
+    if (r.notFound.length) addLog(`Google 沒對到：${r.notFound.join('、')}`, 'error');
+    if (r.failed.length) addLog(`出錯：${r.failed.map((f) => `${f.name}（${f.error}）`).join('；')}`, 'error');
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    rechecking = false;
+    $('#recheck-btn').disabled = false;
+    refreshStats();
+  }
+});
+
+/* ---------- 整理地址與地區 ---------- */
 
 let fixing = false;
 async function fixAddresses() {

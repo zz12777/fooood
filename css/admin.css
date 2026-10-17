@@ -159,3 +159,8 @@
   gap: 8px 20px;
   flex-wrap: wrap;
 }
+
+.sub-title {
+  margin: 20px 0 6px;
+  font-size: 1rem;
+}
