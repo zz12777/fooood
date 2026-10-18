@@ -311,11 +311,11 @@ async function findOrigin(kind) {
     const text = $('#near-input').value.trim();
     if (!text) throw new Error('請先輸入街道或地址');
     const found = await geocode(text);
-    if (!found.length) throw new Error('在新竹市和新竹縣找不到這個地址，換個寫法試試，例如加上區名');
+    if (!found.length) throw new Error('找不到這個地址，請加上縣市或區名再查，例如「新竹市東區 中華路二段」');
     if (found.length === 1) return setOrigin(found[0], found[0].label);
     n.busy = false;
     n.choices = found;
-    n.msg = '找到好幾個地點，請選你所在的那一個';
+    n.msg = '找到好幾個地點，請選起點。如果沒有你要的，請加上縣市再查，例如「新竹市 中華路二段」';
     renderNear();
   } catch (e) {
     n.busy = false;

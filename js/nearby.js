@@ -42,12 +42,15 @@ export function routeUrl(origin, r, mode) {
 }
 
 // 輸入街道或地址，用 OpenStreetMap 轉成座標（免費，不需要金鑰）。
-// 只搜新竹市與新竹縣的範圍，可能有好幾個同名的路，所以回傳最多 5 個候選讓使用者選。
-export async function geocode(text) {
+// 沒寫縣市時，先只找新竹一帶，找不到才擴大到全台；有寫縣市就直接依輸入找。
+// 同名的路可能很多，所以回傳最多 8 個候選讓使用者選，每個候選都帶縣市與區。
+const HSINCHU_BOX = '120.85,24.92,121.20,24.65';
+
+async function searchOsm(text, box) {
   const url =
-    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=tw&accept-language=zh-TW' +
-    '&viewbox=120.80,25.00,121.50,24.40&bounded=1&q=' +
-    encodeURIComponent(text);
+    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&countrycodes=tw&accept-language=zh-TW' +
+    (box ? `&viewbox=${box}&bounded=1` : '') +
+    `&q=${encodeURIComponent(text)}`;
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error('地址查詢暫時不能用');
   const rows = await res.json();
@@ -62,9 +65,18 @@ export async function geocode(text) {
     if (seen.has(label)) continue;
     seen.add(label);
     out.push({ lat: Number(r.lat), lng: Number(r.lon), label });
-    if (out.length >= 5) break;
+    if (out.length >= 8) break;
   }
   return out;
+}
+
+export async function geocode(text) {
+  const hasCity = /[市縣]/.test(text);
+  if (!hasCity) {
+    const near = await searchOsm(text, HSINCHU_BOX);
+    if (near.length) return near;
+  }
+  return searchOsm(text);
 }
 
 export function currentPosition() {
