@@ -2,9 +2,10 @@
 // 估算會有誤差，所以篩選時多放寬 20%。
 
 export const MODES = {
-  walk: { label: '走路', kmh: 4.5, detour: 1.3, overhead: 0, gmaps: 'walking' },
-  bike: { label: '騎車', kmh: 25, detour: 1.3, overhead: 1, gmaps: 'two-wheeler' },
-  car: { label: '開車', kmh: 28, detour: 1.35, overhead: 2, gmaps: 'driving' },
+  // 市區實際會遇到紅綠燈、單行道、繞過鐵路與河川，所以速度與繞路係數都抓得比較保守
+  walk: { label: '走路', kmh: 4.2, detour: 1.4, overhead: 0, gmaps: 'walking' },
+  bike: { label: '騎車', kmh: 18, detour: 1.5, overhead: 2, gmaps: 'two-wheeler' },
+  car: { label: '開車', kmh: 20, detour: 1.5, overhead: 4, gmaps: 'driving' },
 };
 export const MINUTE_OPTIONS = [5, 10, 15, 20, 30];
 export const BUFFER = 1.2;
@@ -40,18 +41,30 @@ export function routeUrl(origin, r, mode) {
   );
 }
 
-// 輸入街道或地址，用 OpenStreetMap 轉成座標（免費，不需要金鑰）
+// 輸入街道或地址，用 OpenStreetMap 轉成座標（免費，不需要金鑰）。
+// 只搜新竹市與新竹縣的範圍，可能有好幾個同名的路，所以回傳最多 5 個候選讓使用者選。
 export async function geocode(text) {
-  const q = /新竹/.test(text) ? text : `新竹 ${text}`;
   const url =
-    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=tw&accept-language=zh-TW' +
-    '&viewbox=120.75,25.0,121.25,24.5&q=' +
-    encodeURIComponent(q);
+    'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=tw&accept-language=zh-TW' +
+    '&viewbox=120.80,25.00,121.50,24.40&bounded=1&q=' +
+    encodeURIComponent(text);
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error('地址查詢暫時不能用');
   const rows = await res.json();
-  if (!rows.length) return null;
-  return { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const a = r.address || {};
+    const label =
+      [a.city || a.county, a.city_district || a.suburb || a.town || a.township, a.village || a.neighbourhood, a.road]
+        .filter(Boolean)
+        .join('') || String(r.display_name || '').split(',').slice(0, 3).join(' ');
+    if (seen.has(label)) continue;
+    seen.add(label);
+    out.push({ lat: Number(r.lat), lng: Number(r.lon), label });
+    if (out.length >= 5) break;
+  }
+  return out;
 }
 
 export function currentPosition() {

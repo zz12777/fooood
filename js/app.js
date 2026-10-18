@@ -15,7 +15,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
-  near: { origin: null, label: '', mode: 'walk', minutes: 10, busy: false, msg: '' },
+  near: { origin: null, label: '', mode: 'walk', minutes: 10, busy: false, msg: '', choices: [] },
   draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
 };
@@ -182,7 +182,6 @@ function cardHtml(r, now, index = 0) {
   if (r.area) tags.push(`<span class="tag tag-area">${esc(r.area)}</span>`);
   r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(c)}</span>`));
   if (!r.cats.length) tags.push('<span class="tag tag-pending">未分類</span>');
-  if (state.near.origin && r.nearMin != null) tags.push(`<span class="tag tag-near">${MODES[state.near.mode].label}約 ${r.nearMin} 分鐘</span>`);
   if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}吃過</span>`);
 
   const mapHref =
@@ -283,6 +282,9 @@ function renderNear() {
   ).join('');
   const st = $('#near-status');
   st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `以「${n.label}」為起點` : '');
+  $('#near-choices').innerHTML = n.choices
+    .map((c, i) => `<button type="button" class="chip chip-near" data-near-pick="${i}"><span>${esc(c.label)}</span></button>`)
+    .join('');
   st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
 }
 
@@ -290,6 +292,7 @@ function setOrigin(origin, label) {
   state.near.origin = origin;
   state.near.label = label;
   state.near.msg = '';
+  state.near.choices = [];
   state.near.busy = false;
   renderNear();
   refresh();
@@ -307,9 +310,13 @@ async function findOrigin(kind) {
     }
     const text = $('#near-input').value.trim();
     if (!text) throw new Error('請先輸入街道或地址');
-    const p = await geocode(text);
-    if (!p) throw new Error('找不到這個地址，換個寫法試試，例如只寫街道名');
-    setOrigin(p, text);
+    const found = await geocode(text);
+    if (!found.length) throw new Error('在新竹市和新竹縣找不到這個地址，換個寫法試試，例如加上區名');
+    if (found.length === 1) return setOrigin(found[0], found[0].label);
+    n.busy = false;
+    n.choices = found;
+    n.msg = '找到好幾個地點，請選你所在的那一個';
+    renderNear();
   } catch (e) {
     n.busy = false;
     n.msg = e.message || '查詢失敗';
@@ -442,6 +449,12 @@ function bindEvents() {
   });
   $('#near-gps').addEventListener('click', () => findOrigin('gps'));
   $('#filters').addEventListener('click', (e) => {
+    const pick = e.target.closest('[data-near-pick]');
+    if (pick) {
+      const c = state.near.choices[Number(pick.dataset.nearPick)];
+      if (c) setOrigin(c, c.label);
+      return;
+    }
     const nm = e.target.closest('[data-near-mode]');
     const nn = e.target.closest('[data-near-min]');
     if (nm || nn) {
@@ -492,6 +505,7 @@ function clearFilters() {
   state.near.origin = null;
   state.near.label = '';
   state.near.msg = '';
+  state.near.choices = [];
   $('#near-input').value = '';
   renderNear();
   $('#search').value = '';
