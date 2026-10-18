@@ -445,6 +445,48 @@ main {
 .filters-body .group:nth-child(3) h3 {
   --mark: var(--green);
 }
+.group-near h3 {
+  --mark: var(--yellow);
+}
+.near {
+  display: grid;
+  gap: 10px;
+}
+.near-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.near-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+}
+.near-form .btn-secondary {
+  min-height: 40px;
+  padding: 0 14px;
+}
+.near-status {
+  min-height: 1.2em;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+.near-status.is-error {
+  color: #a3473f;
+}
+.near-note {
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+}
+.chip-near[aria-pressed='true'] {
+  background: var(--yellow);
+}
 .county {
   display: grid;
   gap: 8px;
@@ -621,6 +663,10 @@ main {
   background: var(--blue-soft);
   border: 1.5px solid var(--blue);
 }
+.tag-near {
+  background: var(--yellow-soft);
+  border: 1.5px solid var(--yellow);
+}
 .tag-cat {
   background: var(--green-soft);
   border: 1.5px solid var(--green);
@@ -771,7 +817,8 @@ main {
     grid-template-columns: 1.4fr 1fr;
     column-gap: 40px;
   }
-  .filters-body .group:nth-child(3) {
+  .filters-body .group:nth-child(3),
+  .filters-body .group:nth-child(4) {
     grid-column: 1 / -1;
   }
   .filters-body .btn-text {

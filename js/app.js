@@ -1,6 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js';
+import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js';
 import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,6 +15,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
+  near: { origin: null, label: '', mode: 'walk', minutes: 10, busy: false, msg: '' },
   draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
 };
@@ -89,7 +91,7 @@ async function rest(path) {
 }
 
 const SELECT =
-  'restaurants?select=id,name,address,maps_url,price_level,status,note,opening_hours,needs_review,created_at,' +
+  'restaurants?select=id,name,address,lat,lng,maps_url,price_level,status,note,opening_hours,needs_review,created_at,' +
   'area:areas(name,county),' +
   'cats:restaurant_categories(category:categories(name)),' +
   'links:source_links(platform,url,note)' +
@@ -99,7 +101,9 @@ function normalize(row) {
   return {
     id: row.id,
     name: row.name,
-    address: toTrad(row.address || ''),
+    address: fixAddressOrder(row.address || ''),
+    lat: typeof row.lat === 'number' ? row.lat : null,
+    lng: typeof row.lng === 'number' ? row.lng : null,
     mapsUrl: row.maps_url,
     price: row.price_level || null,
     status: row.status,
@@ -143,11 +147,22 @@ function matches(r) {
   return true;
 }
 
-const filtered = () => state.all.filter(matches);
+// 有設定「附近」時，只留估算時間在範圍內的店，並依時間由近到遠排
+function filtered() {
+  const n = state.near;
+  const list = state.all.filter(matches);
+  if (!n.origin) return list;
+  const out = [];
+  for (const r of list) {
+    const min = minutesTo(r, n.origin, n.mode);
+    if (withinLimit(min, n.minutes)) out.push({ ...r, nearMin: min });
+  }
+  return out.sort((x, y) => x.nearMin - y.nearMin);
+}
 
 function activeFilterCount() {
   const f = state.filters;
-  return f.areas.size + f.prices.size + f.cats.size + (f.q ? 1 : 0);
+  return f.areas.size + f.prices.size + f.cats.size + (f.q ? 1 : 0) + (state.near.origin ? 1 : 0);
 }
 
 /* ---------- 畫面：卡片 ---------- */
@@ -167,6 +182,7 @@ function cardHtml(r, now, index = 0) {
   if (r.area) tags.push(`<span class="tag tag-area">${esc(r.area)}</span>`);
   r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(c)}</span>`));
   if (!r.cats.length) tags.push('<span class="tag tag-pending">未分類</span>');
+  if (state.near.origin && r.nearMin != null) tags.push(`<span class="tag tag-near">${MODES[state.near.mode].label}約 ${r.nearMin} 分鐘</span>`);
   if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}吃過</span>`);
 
   const mapHref =
@@ -192,6 +208,7 @@ function cardHtml(r, now, index = 0) {
     ${r.note ? `<p class="note">${linkify(r.note)}</p>` : ''}
     <div class="card-foot">
       <a class="link link-map" href="${esc(mapHref)}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}Google Map</a>
+      ${state.near.origin && r.nearMin != null ? `<a class="link link-route" href="${esc(routeUrl(state.near.origin, r, state.near.mode))}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}路線</a>` : ''}
       ${refs}
       ${openTag}
     </div>
@@ -256,8 +273,52 @@ function renderFilterChips() {
     .join('');
 }
 
+function renderNear() {
+  const n = state.near;
+  $('#near-modes').innerHTML = Object.entries(MODES)
+    .map(([k, m]) => `<button type="button" class="chip chip-near" aria-pressed="${n.mode === k}" data-near-mode="${k}"><span>${m.label}</span></button>`)
+    .join('');
+  $('#near-mins').innerHTML = MINUTE_OPTIONS.map(
+    (m) => `<button type="button" class="chip chip-near" aria-pressed="${n.minutes === m}" data-near-min="${m}"><span>${m} 分鐘內</span></button>`
+  ).join('');
+  const st = $('#near-status');
+  st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `以「${n.label}」為起點` : '');
+  st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
+}
+
+function setOrigin(origin, label) {
+  state.near.origin = origin;
+  state.near.label = label;
+  state.near.msg = '';
+  state.near.busy = false;
+  renderNear();
+  refresh();
+}
+
+async function findOrigin(kind) {
+  const n = state.near;
+  n.busy = true;
+  n.msg = '';
+  renderNear();
+  try {
+    if (kind === 'gps') {
+      setOrigin(await currentPosition(), '目前位置');
+      return;
+    }
+    const text = $('#near-input').value.trim();
+    if (!text) throw new Error('請先輸入街道或地址');
+    const p = await geocode(text);
+    if (!p) throw new Error('找不到這個地址，換個寫法試試，例如只寫街道名');
+    setOrigin(p, text);
+  } catch (e) {
+    n.busy = false;
+    n.msg = e.message || '查詢失敗';
+    renderNear();
+  }
+}
+
 function syncChipState() {
-  document.querySelectorAll('.chip').forEach((el) => {
+  document.querySelectorAll('.chip[data-kind]').forEach((el) => {
     const kind = el.dataset.kind;
     const raw = el.dataset.value;
     const value = kind === 'prices' ? Number(raw) : raw;
@@ -375,7 +436,21 @@ function refresh() {
 }
 
 function bindEvents() {
+  $('#near-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    findOrigin('text');
+  });
+  $('#near-gps').addEventListener('click', () => findOrigin('gps'));
   $('#filters').addEventListener('click', (e) => {
+    const nm = e.target.closest('[data-near-mode]');
+    const nn = e.target.closest('[data-near-min]');
+    if (nm || nn) {
+      if (nm) state.near.mode = nm.dataset.nearMode;
+      if (nn) state.near.minutes = Number(nn.dataset.nearMin);
+      renderNear();
+      refresh();
+      return;
+    }
     const c = e.target.closest('.chip');
     if (c) {
       const kind = c.dataset.kind;
@@ -414,6 +489,11 @@ function clearFilters() {
   f.prices.clear();
   f.cats.clear();
   f.q = '';
+  state.near.origin = null;
+  state.near.label = '';
+  state.near.msg = '';
+  $('#near-input').value = '';
+  renderNear();
   $('#search').value = '';
   refresh();
 }
@@ -422,6 +502,7 @@ function clearFilters() {
 
 function setupStatic() {
   $('#brand-mark').innerHTML = mark();
+  renderNear();
   $('#draw-art').innerHTML = bowl();
   $('#search-icon').innerHTML = icon.search(18);
   $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選地區、價位、類別</span>`;

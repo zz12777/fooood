@@ -69,6 +69,21 @@
           <h3>類別</h3>
           <div id="filter-cats"></div>
         </div>
+        <div class="group group-near">
+          <h3>附近</h3>
+          <div class="near">
+            <form class="near-form" id="near-form">
+              <label class="sr" for="near-input">目前所在的街道或地址</label>
+              <input type="text" id="near-input" placeholder="輸入目前所在的街道，例如 中華路二段" autocomplete="street-address">
+              <button type="submit" class="btn-secondary">查詢</button>
+              <button type="button" class="btn-secondary" id="near-gps">使用目前位置</button>
+            </form>
+            <p class="near-status" id="near-status" aria-live="polite"></p>
+            <div class="chips" id="near-modes" role="group" aria-label="交通方式"></div>
+            <div class="chips" id="near-mins" role="group" aria-label="幾分鐘內"></div>
+            <p class="near-note">時間是用直線距離估算，會多放寬 20%，實際路線請點卡片上的「路線」。</p>
+          </div>
+        </div>
         <button type="button" class="btn-text" id="clear-filters" hidden>清除所有篩選</button>
       </div>
     </details>
@@ -91,6 +106,6 @@
     <p>用來把想吃的店收在同一個地方。<a class="foot-link" href="admin.html">管理</a></p>
   </footer>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=20261018"></script>
 </body>
 </html>
