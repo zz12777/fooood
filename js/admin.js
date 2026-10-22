@@ -93,9 +93,31 @@ async function refreshStats() {
     .is('hours_updated_at', null);
   $('#stat-total').textContent = total.error ? '讀取失敗' : `${total.count} 間`;
   $('#stat-todo').textContent = todo.error ? '讀取失敗' : `${todo.count} 間`;
+  refreshUsage();
   const changed = await sb.from('restaurants').select('id', { count: 'exact', head: true }).gte('hours_change_count', 1);
   $('#stat-changed').textContent = changed.error ? '尚未啟用' : `${changed.count} 間`;
   return todo.count;
+}
+
+// 這兩個數字要和 Google Cloud 設定的上限一致，改了額度就跟著改這裡
+const DAILY_LIMIT = 200;
+const MONTHLY_FREE = 1000;
+
+async function refreshUsage() {
+  const { data, error } = await sb.rpc('api_usage_summary');
+  const t = $('#usage-today');
+  const m = $('#usage-month');
+  if (error || !data) {
+    t.textContent = '尚未啟用';
+    m.textContent = '尚未啟用';
+    return;
+  }
+  const dayLeft = Math.max(0, DAILY_LIMIT - data.today);
+  const monLeft = Math.max(0, MONTHLY_FREE - data.month);
+  t.textContent = `${dayLeft} 次（已用 ${data.today} 次，上限 ${DAILY_LIMIT}）`;
+  m.textContent = `${monLeft} 次（已用 ${data.month} 次，上限 ${MONTHLY_FREE}）`;
+  t.classList.toggle('is-low', dayLeft < 20);
+  m.classList.toggle('is-low', monLeft < 100);
 }
 
 async function callFill(body) {

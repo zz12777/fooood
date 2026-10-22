@@ -164,3 +164,7 @@
   margin: 20px 0 6px;
   font-size: 1rem;
 }
+
+.stats dd.is-low {
+  color: #a3473f;
+}

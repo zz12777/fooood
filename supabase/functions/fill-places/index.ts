@@ -128,7 +128,17 @@ const FIELD_MASK = [
   'places.googleMapsUri',
 ].join(',');
 
-async function searchPlace(apiKey, name, lat, lng) {
+// 記錄一次 Google 呼叫，管理頁用來顯示今天與本月已用次數（寫入失敗不影響主流程）
+async function logUsage(db) {
+  try {
+    await db.from('api_usage').insert({ fn: 'fill-places', n: 1 });
+  } catch {
+    /* 忽略 */
+  }
+}
+
+async function searchPlace(apiKey, name, lat, lng, db) {
+  if (db) await logUsage(db);
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
@@ -198,7 +208,7 @@ Deno.serve(async (req) => {
       for (const r of picks) {
         await new Promise((ok) => setTimeout(ok, 3500));
         try {
-          const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
+          const data = await searchPlace(apiKey, r.name, r.lat, r.lng, userClient);
           const places = data.places || [];
           const place =
             places.find((p) => r.place_id && p.id === r.place_id) ||
@@ -253,7 +263,7 @@ Deno.serve(async (req) => {
       // 放慢節奏：每次間隔約 3.5 秒，一分鐘不超過約 17 次，低於每分鐘 20 次的上限
       await new Promise((ok) => setTimeout(ok, 3500));
       try {
-        const data = await searchPlace(apiKey, r.name, r.lat, r.lng);
+        const data = await searchPlace(apiKey, r.name, r.lat, r.lng, userClient);
         // 先用 Google 地圖的店家編號（cid）精準比對；座標只是粗略位置，不能單獨依賴
         const byCid = r.google_cid
           ? (data.places || []).find((p) => String(p.googleMapsUri || '').includes(`cid=${r.google_cid}`))

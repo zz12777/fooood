@@ -241,7 +241,17 @@ async function expandUrl(input) {
   return cur;
 }
 
-async function searchPlace(apiKey, name, lat, lng) {
+// 記錄一次 Google 呼叫，管理頁用來顯示今天與本月已用次數（寫入失敗不影響主流程）
+async function logUsage(db) {
+  try {
+    await db.from('api_usage').insert({ fn: 'add-places', n: 1 });
+  } catch {
+    /* 忽略 */
+  }
+}
+
+async function searchPlace(apiKey, name, lat, lng, db) {
+  if (db) await logUsage(db);
   const body = { textQuery: name, languageCode: 'zh-TW', regionCode: 'TW', maxResultCount: 5 };
   if (lat != null) body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 50000 } };
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -340,6 +350,7 @@ Deno.serve(async (req) => {
             maxResultCount: 5,
             locationBias: { circle: { center: { latitude: 24.8, longitude: 121.0 }, radius: 30000 } },
           };
+          await logUsage(db);
           const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': FIELD_MASK },
@@ -414,7 +425,7 @@ Deno.serve(async (req) => {
         }
 
         await sleep(3500);
-        const data = await searchPlace(apiKey, info.name, info.lat, info.lng);
+        const data = await searchPlace(apiKey, info.name, info.lat, info.lng, db);
         const place = (data.places || []).find((p) => String(p.googleMapsUri || '').includes(`cid=${info.cid}`));
         if (!place) throw new Error(`Google 搜尋「${info.name}」沒有對到同一間店`);
 
