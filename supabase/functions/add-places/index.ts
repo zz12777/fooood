@@ -367,9 +367,7 @@ Deno.serve(async (req) => {
             throw new Error(`沒有對到名稱相符的店${near}`);
           }
           const place = best.p;
-          if (!/新竹/.test(normalizeAddr(place.formattedAddress))) {
-            throw new Error(`找到「${place.displayName?.text}」但地址不在新竹：${place.formattedAddress}`);
-          }
+          // 不限新竹：搜尋會優先找新竹一帶，新竹以外的店也照樣加入（地區會依地址判斷縣市）
           const cid = (String(place.googleMapsUri || '').match(/cid=(\d+)/) || [])[1] || null;
           if (cid && seen.has(cid)) {
             results.push({ input: label, name: place.displayName?.text, status: 'exists', message: '這次貼的名單裡重複了' });

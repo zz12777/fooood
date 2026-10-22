@@ -466,6 +466,7 @@ $('#add-btn').addEventListener('click', () => !adding && addPlaces());
 
 const normKey = (s) => toTrad(String(s || '')).toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 let listAdding = false;
+let listStop = false;
 
 $('#list-parse').addEventListener('click', () => {
   const names = parseListText($('#list-input').value);
@@ -486,7 +487,10 @@ async function addByNames() {
   if (!names.length) return;
   const note = $('#list-note').value.trim() || null;
   listAdding = true;
+  listStop = false;
   $('#list-add').disabled = true;
+  $('#list-stop').hidden = false;
+  $('#list-stop').disabled = false;
   const out = $('#list-log');
   out.innerHTML = '';
   const addLog = (text, kind = '') => {
@@ -530,6 +534,10 @@ async function addByNames() {
     sync();
     addLog(`要查詢 ${todo.length} 間，每間約 4 秒，請不要關掉這一頁。`);
     for (let i = 0; i < todo.length; i += ADD_CHUNK) {
+      if (listStop) {
+        addLog('已停止。剩下的店名留在文字框，之後再按一次就好。', 'error');
+        break;
+      }
       const chunk = todo.slice(i, i + ADD_CHUNK);
       addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 筆，共 ${todo.length} 筆`);
       const { data, error: e } = await sb.functions.invoke('add-places', {
@@ -576,10 +584,16 @@ async function addByNames() {
   } finally {
     listAdding = false;
     $('#list-add').disabled = false;
+    $('#list-stop').hidden = true;
     refreshStats();
   }
 }
 $('#list-add').addEventListener('click', () => !listAdding && addByNames());
+$('#list-stop').addEventListener('click', () => {
+  listStop = true;
+  $('#list-stop').disabled = true;
+  $('#list-log').insertAdjacentHTML('beforeend', '<li>收到，這一批處理完就停（最多 6 間）。</li>');
+});
 
 const saveAdd = keepText('#add-input', 'fooood:pending-links');
 const saveNames = keepText('#list-names', 'fooood:pending-names');

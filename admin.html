@@ -93,7 +93,7 @@
       <section class="panel" aria-labelledby="list-title">
         <h2 id="list-title">貼清單文字新增店家</h2>
         <p class="muted">
-          在 Google 地圖的清單頁全選複製，整段貼在下面，按「解析店名」。確認或修改店名後再按「依店名新增」。已經在清單裡的店會略過，不會動到原本的備註。
+          在 Google 地圖的清單頁全選複製，整段貼在下面，按「解析店名」。新竹以外的店也可以加。確認或修改店名後再按「依店名新增」。已經在清單裡的店會略過，不會動到原本的備註。
         </p>
         <label class="field field-wide">
           <span>清單頁文字</span>
@@ -112,6 +112,7 @@
         </label>
         <div class="row actions">
           <button type="button" class="btn-primary" id="list-add">依店名新增</button>
+          <button type="button" class="btn-secondary" id="list-stop" hidden>停止</button>
         </div>
         <ol class="log" id="list-log" aria-live="polite"></ol>
         <label class="field field-wide">
@@ -146,6 +147,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261022c"></script>
+  <script type="module" src="js/admin.js?v=20261022d"></script>
 </body>
 </html>
