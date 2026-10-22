@@ -499,12 +499,27 @@ async function addByNames() {
   let added = 0;
   let exists = 0;
   let failed = 0;
-  const left = [];
+  const retry = []; // Google 暫時出錯或額度用完，下次可以直接再試
+  const miss = []; // Google 有回應但對不到店，要改店名再試，不然只會浪費次數
+  let todo = names;
+  let done = 0; // todo 裡已經送出並收到結果的筆數
+  // 每處理完一批就更新文字框：成功與已存在的拿掉，只留還沒處理和要重試的
+  const sync = () => {
+    $('#list-names').value = [...retry, ...todo.slice(done)].join('\n');
+    saveNames();
+    if (miss.length) {
+      const prev = $('#list-miss').value.trim();
+      const all = [...new Set([...(prev ? prev.split('\n') : []), ...miss])];
+      $('#list-miss').value = all.join('\n');
+      saveMiss();
+      miss.length = 0;
+    }
+  };
   try {
     const { data: have, error } = await sb.from('restaurants').select('name').limit(5000);
     if (error) throw new Error(error.message);
     const haveKeys = (have || []).map((r) => normKey(r.name));
-    const todo = [];
+    todo = [];
     for (const n of names) {
       const k = normKey(n);
       if (k && haveKeys.some((h) => h === k || (k.length >= 4 && (h.includes(k) || k.includes(h)) && Math.min(h.length, k.length) >= 4))) {
@@ -512,6 +527,7 @@ async function addByNames() {
         addLog(`略過：${n}（名稱已在清單裡）`);
       } else todo.push(n);
     }
+    sync();
     addLog(`要查詢 ${todo.length} 間，每間約 4 秒，請不要關掉這一頁。`);
     for (let i = 0; i < todo.length; i += ADD_CHUNK) {
       const chunk = todo.slice(i, i + ADD_CHUNK);
@@ -539,22 +555,24 @@ async function addByNames() {
           addLog(`略過：${r.name}（${r.message}）`);
         } else {
           failed += 1;
-          left.push(chunk[k]);
+          const temporary = /Google (403|429|5\d\d)|寫入失敗/.test(String(r.message));
+          (temporary ? retry : miss).push(chunk[k]);
           addLog(`沒新增：${r.input}（${r.message}）`, 'error');
         }
       });
+      done = i + results.length;
+      sync();
       if (results.length < chunk.length) {
-        left.push(...chunk.slice(results.length));
         addLog(shortReason(results, chunk.length), 'error');
-        left.push(...todo.slice(i + chunk.length));
         break;
       }
     }
     addLog(`結束：新增 ${added} 間，已存在 ${exists} 間，沒新增 ${failed} 間。`, failed ? 'error' : 'ok');
-    $('#list-names').value = left.join('\n');
-    saveNames();
+    if ($('#list-names').value.trim()) addLog('還沒處理完的店名留在上面的文字框，額度恢復後再按一次就好。');
+    if ($('#list-miss').value.trim()) addLog('Google 對不到的店名放在下面「對不到的店名」，改好店名再貼回上面。');
   } catch (e) {
-    addLog(`失敗：${e.message}`, 'error');
+    sync();
+    addLog(`失敗：${e.message}。已處理的店已從文字框拿掉，剩下的可以再按一次。`, 'error');
   } finally {
     listAdding = false;
     $('#list-add').disabled = false;
@@ -565,6 +583,7 @@ $('#list-add').addEventListener('click', () => !listAdding && addByNames());
 
 const saveAdd = keepText('#add-input', 'fooood:pending-links');
 const saveNames = keepText('#list-names', 'fooood:pending-names');
+const saveMiss = keepText('#list-miss', 'fooood:missed-names');
 
 $('#brand-mark').innerHTML = mark();
 route();
