@@ -93,6 +93,8 @@ async function refreshStats() {
     .is('hours_updated_at', null);
   $('#stat-total').textContent = total.error ? '讀取失敗' : `${total.count} 間`;
   $('#stat-todo').textContent = todo.error ? '讀取失敗' : `${todo.count} 間`;
+  // 全部都查過就收起「補齊」，有新的待查店才會再出現
+  if (!running) $('#fill-block').hidden = !todo.error && todo.count === 0;
   refreshUsage();
   const changed = await sb.from('restaurants').select('id', { count: 'exact', head: true }).gte('hours_change_count', 1);
   $('#stat-changed').textContent = changed.error ? '尚未啟用' : `${changed.count} 間`;

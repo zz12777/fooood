@@ -63,6 +63,7 @@
           <div><dt>本月免費還剩</dt><dd id="usage-month">載入中</dd></div>
         </dl>
         <p class="muted" id="usage-note">只計算管理頁與新增店家的查詢次數，一天與一個月的起點都是太平洋時間（台灣時間下午 3 點換日）。實際用量以 Google Cloud 的指標頁為準。</p>
+        <div id="fill-block">
         <h3 class="sub-title">補齊</h3>
         <p class="muted">補上還沒查過的店的地址、營業時間與價位。每間只查一次，每次最多 20 間，按一次會自動連續跑到沒有為止。新增店家時已經會當場補齊，這裡只用來補早期沒查到的。</p>
         <div class="row actions">
@@ -71,6 +72,7 @@
           <button type="button" class="btn-secondary" id="stop-btn" hidden>停止</button>
         </div>
         <ol class="log" id="log" aria-live="polite"></ol>
+        </div>
         <h3 class="sub-title">抽查營業時間</h3>
         <p class="muted">店家可能自己改了營業時間。每按一次隨機抽 10 間重抓，有變才更新。發現改過的店之後會更常被抽到。隔一陣子按一次就好。</p>
         <div class="row actions">
@@ -140,6 +142,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261022"></script>
+  <script type="module" src="js/admin.js?v=20261022b"></script>
 </body>
 </html>
