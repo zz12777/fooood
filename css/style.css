@@ -452,25 +452,63 @@ main {
   display: grid;
   gap: 10px;
 }
-.near-form {
-  display: flex;
-  flex-wrap: wrap;
+.near-ways {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-.near-form input {
-  flex: 1 1 200px;
-  min-width: 0;
-  min-height: 40px;
+.near-way {
+  min-height: 44px;
   padding: 0 12px;
   font: inherit;
   color: var(--ink);
   background: #fff;
   border: 1.5px solid var(--ink);
   border-radius: 12px;
+  cursor: pointer;
 }
-.near-form .btn-secondary {
-  min-height: 40px;
-  padding: 0 14px;
+.near-way:hover {
+  background: var(--paper-2);
+}
+.near-way[aria-pressed='true'] {
+  background: var(--yellow);
+}
+.near-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--yellow-soft);
+  border-radius: 12px;
+}
+.near-sentence input,
+.near-sentence select {
+  min-height: 38px;
+  padding: 0 10px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+}
+.near-sentence input {
+  flex: 1 1 140px;
+  min-width: 0;
+  max-width: 260px;
+}
+.near-here {
+  padding: 4px 10px;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+}
+.near-go {
+  min-height: 38px;
+  padding: 0 16px;
+}
+.near-status:empty {
+  display: none;
 }
 .near-status {
   min-height: 1.2em;
@@ -483,9 +521,6 @@ main {
 .near-note {
   font-size: 0.8125rem;
   color: var(--ink-soft);
-}
-.chip-near[aria-pressed='true'] {
-  background: var(--yellow);
 }
 .county {
   display: grid;

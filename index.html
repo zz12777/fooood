@@ -72,17 +72,26 @@
         <div class="group group-near">
           <h3>附近</h3>
           <div class="near">
-            <form class="near-form" id="near-form">
+            <div class="near-ways">
+              <button type="button" class="near-way" data-near-way="street" aria-pressed="false">以街道查詢</button>
+              <button type="button" class="near-way" data-near-way="gps" aria-pressed="false">使用目前位置</button>
+            </div>
+            <form class="near-sentence" id="near-form" hidden>
+              <span>搜尋離</span>
               <label class="sr" for="near-input">起點的街道或地址</label>
-              <input type="text" id="near-input" placeholder="輸入起點街道，例如 中華路二段" autocomplete="street-address">
-              <button type="submit" class="btn-secondary">查詢</button>
-              <button type="button" class="btn-secondary" id="near-gps">使用目前位置</button>
+              <input type="text" id="near-input" placeholder="例如 大學路" autocomplete="street-address">
+              <span class="near-here" id="near-here" hidden>目前位置</span>
+              <label class="sr" for="near-mode">交通方式</label>
+              <select id="near-mode"></select>
+              <label class="sr" for="near-min">幾分鐘內</label>
+              <select id="near-min"></select>
+              <span>分鐘內的店家</span>
+              <button type="submit" class="btn-primary near-go">搜尋</button>
             </form>
             <p class="near-status" id="near-status" aria-live="polite"></p>
             <div class="chips" id="near-choices"></div>
-            <div class="chips" id="near-modes" role="group" aria-label="交通方式"></div>
-            <div class="chips" id="near-mins" role="group" aria-label="幾分鐘內"></div>
-            <p class="near-note">清單依直線距離由近到遠排，分鐘數只是粗略估算，會多放寬 20%。實際時間請點卡片上的「路線」。</p>
+            <button type="button" class="btn-text" id="near-cancel" hidden>取消附近篩選</button>
+            <p class="near-note" id="near-note" hidden>清單依直線距離由近到遠排，分鐘數只是粗略估算，會多放寬 20%。實際時間請點卡片上的「路線」。</p>
           </div>
         </div>
         <button type="button" class="btn-text" id="clear-filters" hidden>清除所有篩選</button>
@@ -107,6 +116,6 @@
     <p>用來把想吃的店收在同一個地方。<a class="foot-link" href="admin.html">管理</a></p>
   </footer>
 
-  <script type="module" src="js/app.js?v=20261020"></script>
+  <script type="module" src="js/app.js?v=20261101"></script>
 </body>
 </html>

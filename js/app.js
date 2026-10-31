@@ -15,7 +15,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
-  near: { origin: null, label: '', mode: 'walk', minutes: 10, busy: false, msg: '', choices: [] },
+  near: { how: null, origin: null, label: '', mode: 'bike', minutes: 10, busy: false, msg: '', choices: [] },
   draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
 };
@@ -274,18 +274,22 @@ function renderFilterChips() {
 
 function renderNear() {
   const n = state.near;
-  $('#near-modes').innerHTML = Object.entries(MODES)
-    .map(([k, m]) => `<button type="button" class="chip chip-near" aria-pressed="${n.mode === k}" data-near-mode="${k}"><span>${m.label}</span></button>`)
+  document.querySelectorAll('[data-near-way]').forEach((b) => b.setAttribute('aria-pressed', String(n.how === b.dataset.nearWay)));
+  $('#near-form').hidden = !n.how;
+  $('#near-input').hidden = n.how !== 'street';
+  $('#near-here').hidden = n.how !== 'gps';
+  $('#near-mode').innerHTML = Object.entries(MODES)
+    .map(([k, m]) => `<option value="${k}"${n.mode === k ? ' selected' : ''}>${m.label}</option>`)
     .join('');
-  $('#near-mins').innerHTML = MINUTE_OPTIONS.map(
-    (m) => `<button type="button" class="chip chip-near" aria-pressed="${n.minutes === m}" data-near-min="${m}"><span>${m} 分鐘內</span></button>`
-  ).join('');
+  $('#near-min').innerHTML = MINUTE_OPTIONS.map((m) => `<option value="${m}"${n.minutes === m ? ' selected' : ''}>${m}</option>`).join('');
   const st = $('#near-status');
-  st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `以「${n.label}」為起點` : '');
+  st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `已篩選：離「${n.label}」${MODES[n.mode].label} ${n.minutes} 分鐘內的店家，由近到遠排` : '');
+  st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
   $('#near-choices').innerHTML = n.choices
     .map((c, i) => `<button type="button" class="chip chip-near" data-near-pick="${i}"><span>${esc(c.label)}</span></button>`)
     .join('');
-  st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
+  $('#near-cancel').hidden = !n.how;
+  $('#near-note').hidden = !n.how;
 }
 
 function setOrigin(origin, label) {
@@ -445,23 +449,40 @@ function refresh() {
 function bindEvents() {
   $('#near-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    findOrigin('text');
+    findOrigin(state.near.how === 'gps' ? 'gps' : 'text');
   });
-  $('#near-gps').addEventListener('click', () => findOrigin('gps'));
+  document.querySelectorAll('[data-near-way]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const n = state.near;
+      if (n.how === b.dataset.nearWay) return;
+      n.how = b.dataset.nearWay;
+      n.origin = null;
+      n.msg = '';
+      n.choices = [];
+      renderNear();
+      refresh();
+      if (n.how === 'street') $('#near-input').focus();
+    })
+  );
+  const onNearOption = () => {
+    state.near.mode = $('#near-mode').value;
+    state.near.minutes = Number($('#near-min').value);
+    renderNear();
+    if (state.near.origin) refresh();
+  };
+  $('#near-mode').addEventListener('change', onNearOption);
+  $('#near-min').addEventListener('change', onNearOption);
+  $('#near-cancel').addEventListener('click', () => {
+    Object.assign(state.near, { how: null, origin: null, label: '', msg: '', choices: [] });
+    $('#near-input').value = '';
+    renderNear();
+    refresh();
+  });
   $('#filters').addEventListener('click', (e) => {
     const pick = e.target.closest('[data-near-pick]');
     if (pick) {
       const c = state.near.choices[Number(pick.dataset.nearPick)];
       if (c) setOrigin(c, c.label);
-      return;
-    }
-    const nm = e.target.closest('[data-near-mode]');
-    const nn = e.target.closest('[data-near-min]');
-    if (nm || nn) {
-      if (nm) state.near.mode = nm.dataset.nearMode;
-      if (nn) state.near.minutes = Number(nn.dataset.nearMin);
-      renderNear();
-      refresh();
       return;
     }
     const c = e.target.closest('.chip');
@@ -502,10 +523,7 @@ function clearFilters() {
   f.prices.clear();
   f.cats.clear();
   f.q = '';
-  state.near.origin = null;
-  state.near.label = '';
-  state.near.msg = '';
-  state.near.choices = [];
+  Object.assign(state.near, { how: null, origin: null, label: '', msg: '', choices: [] });
   $('#near-input').value = '';
   renderNear();
   $('#search').value = '';
