@@ -7,7 +7,7 @@ export const MODES = {
   bike: { label: '騎車', kmh: 18, detour: 1.5, overhead: 2, gmaps: 'two-wheeler' },
   car: { label: '開車', kmh: 20, detour: 1.5, overhead: 4, gmaps: 'driving' },
 };
-export const MINUTE_OPTIONS = [5, 10, 15, 20, 30];
+export const MINUTE_OPTIONS = [5, 15, 30];
 export const BUFFER = 1.2;
 
 export function distanceKm(lat1, lng1, lat2, lng2) {

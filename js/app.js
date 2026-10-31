@@ -15,7 +15,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
-  near: { how: null, origin: null, label: '', mode: 'bike', minutes: 10, busy: false, msg: '', choices: [] },
+  near: { how: null, origin: null, label: '', mode: 'bike', minutes: 15, busy: false, msg: '', choices: [] },
   draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
 };
