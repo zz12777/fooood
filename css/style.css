@@ -448,6 +448,9 @@ main {
 .group-near h3 {
   --mark: var(--yellow);
 }
+.filters-body .group-when h3 {
+  --mark: var(--blue);
+}
 .near {
   display: grid;
   gap: 10px;
@@ -853,7 +856,8 @@ main {
     column-gap: 40px;
   }
   .filters-body .group:nth-child(3),
-  .filters-body .group:nth-child(4) {
+  .filters-body .group-when,
+  .filters-body .group-near {
     grid-column: 1 / -1;
   }
   .filters-body .btn-text {

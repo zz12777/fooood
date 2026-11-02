@@ -15,6 +15,7 @@ const state = {
   areas: [],
   cats: [],
   filters: { areas: new Set(), prices: new Set(), cats: new Set(), q: '' },
+  when: { how: null, active: false, day: 't1', hour: 12, unknown: 0, prevOpenOnly: false },
   near: { how: null, origin: null, label: '', mode: 'bike', minutes: 15, busy: false, msg: '', choices: [] },
   draw: { count: 3, openOnly: false, skipVisited: false, drawn: false },
   recent: new Set(),
@@ -78,6 +79,29 @@ function isOpenNow(hours, now) {
     if ((now >= start && now < end) || (now + WEEK >= start && now + WEEK < end)) return true;
   }
   return false;
+}
+
+const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六'];
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// 營業時間篩選要看的時間點（一週中的第幾分鐘）；沒有設定就回傳 null
+function whenMinute() {
+  const w = state.when;
+  if (!w.active) return null;
+  const now = taipeiMinuteOfWeek();
+  if (w.how === 'now') return now;
+  const today = Math.floor(now / 1440);
+  const day = w.day[0] === 't' ? (today + Number(w.day.slice(1))) % 7 : Number(w.day.slice(1));
+  return day * 1440 + w.hour * 60;
+}
+
+function whenLabel(short = false) {
+  const w = state.when;
+  if (w.how === 'now') return '現在';
+  const today = Math.floor(taipeiMinuteOfWeek() / 1440);
+  const name =
+    w.day === 't0' ? `今天（週${WEEKDAY[today]}）` : w.day === 't1' ? `明天（週${WEEKDAY[(today + 1) % 7]}）` : `週${WEEKDAY[Number(w.day.slice(1))]}`;
+  return short ? `${name.replace(/（.*?）/, '')} ${pad2(w.hour)}:00` : `${name}${pad2(w.hour)}:00`;
 }
 
 /* ---------- 資料載入 ---------- */
@@ -150,7 +174,17 @@ function matches(r) {
 // 有設定「附近」時，只留估算時間在範圍內的店，並依時間由近到遠排
 function filtered() {
   const n = state.near;
-  const list = state.all.filter(matches);
+  let list = state.all.filter(matches);
+  const t = whenMinute();
+  if (t !== null) {
+    let unknown = 0;
+    list = list.filter((r) => {
+      const o = isOpenNow(r.hours, t);
+      if (o === null) unknown++;
+      return o === true;
+    });
+    state.when.unknown = unknown;
+  }
   if (!n.origin) return list;
   const out = [];
   for (const r of list) {
@@ -162,15 +196,17 @@ function filtered() {
 
 function activeFilterCount() {
   const f = state.filters;
-  return f.areas.size + f.prices.size + f.cats.size + (f.q ? 1 : 0) + (state.near.origin ? 1 : 0);
+  return f.areas.size + f.prices.size + f.cats.size + (f.q ? 1 : 0) + (state.near.origin ? 1 : 0) + (state.when.active ? 1 : 0);
 }
 
 /* ---------- 畫面：卡片 ---------- */
 
 function cardHtml(r, now, index = 0) {
-  const open = isOpenNow(r.hours, now);
-  const openTag =
-    open === null
+  const at = state.when.active && state.when.how === 'at';
+  const open = isOpenNow(r.hours, at ? whenMinute() : now);
+  const openTag = at && open
+    ? `<span class="open is-open">${icon.clock(14)}${esc(whenLabel(true))} 有開</span>`
+    : open === null
       ? ''
       : `<span class="open ${open ? 'is-open' : 'is-closed'}">${icon.clock(14)}${open ? '營業中' : '休息中'}</span>`;
 
@@ -292,6 +328,43 @@ function renderNear() {
   $('#near-note').hidden = !n.how;
 }
 
+function renderWhen() {
+  const w = state.when;
+  document.querySelectorAll('[data-when-way]').forEach((b) => b.setAttribute('aria-pressed', String(w.how === b.dataset.whenWay)));
+  $('#when-form').hidden = w.how !== 'at';
+  const today = Math.floor(taipeiMinuteOfWeek() / 1440);
+  const days = [
+    ['t0', `今天（週${WEEKDAY[today]}）`],
+    ['t1', `明天（週${WEEKDAY[(today + 1) % 7]}）`],
+    ...[1, 2, 3, 4, 5, 6, 0].map((d) => [`w${d}`, `週${WEEKDAY[d]}`]),
+  ];
+  $('#when-day').innerHTML = days.map(([v, l]) => `<option value="${v}"${w.day === v ? ' selected' : ''}>${l}</option>`).join('');
+  $('#when-hour').innerHTML = Array.from({ length: 12 }, (_, i) => i * 2)
+    .map((hh) => `<option value="${hh}"${w.hour === hh ? ' selected' : ''}>${pad2(hh)}:00</option>`)
+    .join('');
+  const st = $('#when-status');
+  if (w.active) {
+    st.textContent =
+      (w.how === 'now' ? '已篩選：現在營業中的店家' : `已篩選：${whenLabel()} 有開的店家`) +
+      (w.unknown ? `。有 ${w.unknown} 間沒有營業時間資料，沒列入` : '');
+  } else st.textContent = '';
+  $('#when-cancel').hidden = !w.how;
+  $('#when-note').hidden = !w.how;
+  // 抽籤區的開關跟著篩選走：有設定營業時間就自動打開，並寫出是哪個時間
+  $('#opt-open-text').textContent = w.active && w.how === 'at' ? `只抽${whenLabel(true)} 有開的店` : '只抽營業中的店';
+}
+
+function setWhen(active) {
+  const w = state.when;
+  if (active && !w.active) w.prevOpenOnly = state.draw.openOnly;
+  if (active) state.draw.openOnly = true;
+  else if (w.active) state.draw.openOnly = w.prevOpenOnly;
+  w.active = active;
+  $('#opt-open').checked = state.draw.openOnly;
+  refresh();
+  renderWhen();
+}
+
 function setOrigin(origin, label) {
   state.near.origin = origin;
   state.near.label = label;
@@ -374,7 +447,7 @@ function stateBlock(art, title, body, action = '') {
 /* ---------- 隨機抽 ---------- */
 
 function drawPool() {
-  const now = taipeiMinuteOfWeek();
+  const now = whenMinute() ?? taipeiMinuteOfWeek();
   let list = filtered();
   let unknown = 0;
   if (state.draw.openOnly) {
@@ -447,6 +520,31 @@ function refresh() {
 }
 
 function bindEvents() {
+  document.querySelectorAll('[data-when-way]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const w = state.when;
+      if (w.how === b.dataset.whenWay) return;
+      w.how = b.dataset.whenWay;
+      setWhen(w.how === 'now'); // 現在營業中直接生效；指定時間要按搜尋
+    })
+  );
+  $('#when-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    state.when.day = $('#when-day').value;
+    state.when.hour = Number($('#when-hour').value);
+    setWhen(true);
+  });
+  const onWhenOption = () => {
+    state.when.day = $('#when-day').value;
+    state.when.hour = Number($('#when-hour').value);
+    if (state.when.active) setWhen(true);
+  };
+  $('#when-day').addEventListener('change', onWhenOption);
+  $('#when-hour').addEventListener('change', onWhenOption);
+  $('#when-cancel').addEventListener('click', () => {
+    state.when.how = null;
+    setWhen(false);
+  });
   $('#near-form').addEventListener('submit', (e) => {
     e.preventDefault();
     findOrigin(state.near.how === 'gps' ? 'gps' : 'text');
@@ -526,6 +624,9 @@ function clearFilters() {
   Object.assign(state.near, { how: null, origin: null, label: '', msg: '', choices: [] });
   $('#near-input').value = '';
   renderNear();
+  state.when.how = null;
+  if (state.when.active) setWhen(false);
+  else renderWhen();
   $('#search').value = '';
   refresh();
 }
@@ -535,6 +636,7 @@ function clearFilters() {
 function setupStatic() {
   $('#brand-mark').innerHTML = mark();
   renderNear();
+  renderWhen();
   $('#draw-art').innerHTML = bowl();
   $('#search-icon').innerHTML = icon.search(18);
   $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選地區、價位、類別</span>`;

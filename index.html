@@ -36,7 +36,7 @@
           <label class="switch">
             <input type="checkbox" role="switch" id="opt-open">
             <span class="track" aria-hidden="true"></span>
-            <span class="switch-text">只抽營業中的店</span>
+            <span class="switch-text" id="opt-open-text">只抽營業中的店</span>
           </label>
           <label class="switch">
             <input type="checkbox" role="switch" id="opt-skip-visited">
@@ -68,6 +68,27 @@
         <div class="group">
           <h3>類別</h3>
           <div id="filter-cats"></div>
+        </div>
+        <div class="group group-when">
+          <h3>營業時間</h3>
+          <div class="near">
+            <div class="near-ways">
+              <button type="button" class="near-way" data-when-way="now" aria-pressed="false">現在營業中</button>
+              <button type="button" class="near-way" data-when-way="at" aria-pressed="false">指定時間</button>
+            </div>
+            <form class="near-sentence" id="when-form" hidden>
+              <span>找</span>
+              <label class="sr" for="when-day">哪一天</label>
+              <select id="when-day"></select>
+              <label class="sr" for="when-hour">幾點</label>
+              <select id="when-hour"></select>
+              <span>有開的店家</span>
+              <button type="submit" class="btn-primary near-go">搜尋</button>
+            </form>
+            <p class="near-status" id="when-status" aria-live="polite"></p>
+            <button type="button" class="btn-text" id="when-cancel" hidden>取消營業時間篩選</button>
+            <p class="near-note" id="when-note" hidden>以先前匯入的營業時間判定，需以 Google Map 目前時間為準。</p>
+          </div>
         </div>
         <div class="group group-near">
           <h3>附近</h3>
@@ -116,6 +137,6 @@
     <p>用來把想吃的店收在同一個地方。<a class="foot-link" href="admin.html">管理</a></p>
   </footer>
 
-  <script type="module" src="js/app.js?v=20261101b"></script>
+  <script type="module" src="js/app.js?v=20261102"></script>
 </body>
 </html>
