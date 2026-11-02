@@ -344,9 +344,7 @@ function renderWhen() {
     .join('');
   const st = $('#when-status');
   if (w.active) {
-    st.textContent =
-      (w.how === 'now' ? '已篩選：現在營業中的店家' : `已篩選：${whenLabel()} 有開的店家`) +
-      (w.unknown ? `。有 ${w.unknown} 間沒有營業時間資料，沒列入` : '');
+    st.textContent = w.how === 'now' ? '已篩選：現在營業中的店家' : `已篩選：${whenLabel()} 有開的店家`;
   } else st.textContent = '';
   $('#when-cancel').hidden = !w.how;
   $('#when-note').hidden = !w.how;

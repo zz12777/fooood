@@ -445,6 +445,10 @@ main {
 .filters-body .group:nth-child(3) h3 {
   --mark: var(--green);
 }
+.group-pair {
+  display: grid;
+  gap: 24px;
+}
 .group-near h3 {
   --mark: var(--yellow);
 }
@@ -855,13 +859,17 @@ main {
     grid-template-columns: 1.4fr 1fr;
     column-gap: 40px;
   }
-  .filters-body .group:nth-child(3),
-  .filters-body .group-when,
-  .filters-body .group-near {
+  .filters-body .group:nth-child(3) {
     grid-column: 1 / -1;
   }
-  .filters-body .btn-text {
+  .filters-body > .btn-text {
     grid-column: 1 / -1;
+  }
+  /* 營業時間與附近並排，各佔一半，按鈕一樣大 */
+  .group-pair {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 40px;
   }
 }
 
