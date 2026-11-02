@@ -436,24 +436,31 @@ main {
   color: var(--ink);
   background: linear-gradient(transparent 58%, var(--mark, var(--yellow)) 58%);
 }
+/* 每個篩選分類各自一個框；小標統一用綠色，由淺到深 */
+.filters-body .group {
+  padding: 16px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+}
 .filters-body .group:nth-child(1) h3 {
-  --mark: var(--blue);
+  --mark: #e3f0da;
 }
 .filters-body .group:nth-child(2) h3 {
-  --mark: var(--yellow);
+  --mark: #d3e8c5;
 }
 .filters-body .group:nth-child(3) h3 {
-  --mark: var(--green);
+  --mark: #c3e0b0;
+}
+.filters-body .group-when h3 {
+  --mark: #b3d79c;
+}
+.filters-body .group-near h3 {
+  --mark: #a3ce88;
 }
 .group-pair {
   display: grid;
   gap: 24px;
-}
-.group-near h3 {
-  --mark: var(--yellow);
-}
-.filters-body .group-when h3 {
-  --mark: var(--blue);
 }
 .near {
   display: grid;
@@ -857,7 +864,7 @@ main {
   }
   .filters-body {
     grid-template-columns: 1.4fr 1fr;
-    column-gap: 40px;
+    column-gap: 24px;
   }
   .filters-body .group:nth-child(3) {
     grid-column: 1 / -1;
@@ -869,7 +876,7 @@ main {
   .group-pair {
     grid-column: 1 / -1;
     grid-template-columns: 1fr 1fr;
-    column-gap: 40px;
+    column-gap: 24px;
   }
 }
 
