@@ -21,13 +21,21 @@ function parseLine(line) {
   return { url, note: note || null };
 }
 
-// 從（已展開的）Google 地圖網址取出店名、店家編號 cid、座標
+// 從（已展開的）Google 地圖網址取出店名、店家編號 cid、座標。
+// 電腦分享的網址長這樣：/maps/place/店名/...!1s0x..:0x..!3d緯度!4d經度
+// 手機分享的網址常長這樣：/maps?q=店名+地址&ftid=0x..%3A0x..（冒號被編碼，店名在 q 參數）
 function parseMapsUrl(href) {
   let url;
   try {
     url = new URL(href);
   } catch {
     return null;
+  }
+  let dec = href;
+  try {
+    dec = decodeURIComponent(href);
+  } catch {
+    /* 保留原樣 */
   }
   let name = null;
   const pm = url.pathname.match(/\/maps\/place\/([^/]+)/);
@@ -38,16 +46,21 @@ function parseMapsUrl(href) {
       name = pm[1].replace(/\+/g, ' ').trim();
     }
   }
+  const q = (url.searchParams.get('q') || url.searchParams.get('query') || '').trim();
+  const qIsCoord = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(q);
+  if (!name && q && !qIsCoord) name = q;
   let cid = null;
-  const hex = href.match(/0x[0-9a-f]+:0x([0-9a-f]+)/i);
+  const hex = dec.match(/0x[0-9a-f]+:0x([0-9a-f]+)/i);
   if (hex) cid = BigInt('0x' + hex[1]).toString();
   else if (/^\d+$/.test(url.searchParams.get('cid') || '')) cid = url.searchParams.get('cid');
   let lat = null;
   let lng = null;
-  const c = href.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  const c = dec.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || dec.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (c) {
     lat = Number(c[1]);
     lng = Number(c[2]);
+  } else if (qIsCoord) {
+    [lat, lng] = q.split(',').map((x) => Number(x.trim()));
   }
   return { name, cid, lat, lng };
 }
@@ -408,24 +421,36 @@ Deno.serve(async (req) => {
           throw new Error('這是一份清單的連結，不是單一店家。請改貼清單裡每間店各自的分享連結');
         }
         const info = parseMapsUrl(full);
-        if (!info || !info.name) throw new Error('網址裡找不到店名，請改貼地圖上「分享」的連結');
-        if (!info.cid) throw new Error('網址裡找不到店家編號，請改貼地圖上「分享」的連結');
+        const shown = full.length > 140 ? full.slice(0, 140) + '…' : full;
+        if (!info || !info.name) throw new Error(`網址裡找不到店名（展開後是 ${shown}）`);
 
-        if (seen.has(info.cid)) {
-          results.push({ input: label, name: info.name, status: 'exists', message: '這次貼的連結裡重複了' });
-          continue;
-        }
-        seen.add(info.cid);
-        const dup = await db.from('restaurants').select('name').eq('google_cid', info.cid).maybeSingle();
-        if (dup.data) {
-          results.push({ input: label, name: dup.data.name, status: 'exists', message: '已經在清單裡' });
-          continue;
+        if (info.cid) {
+          if (seen.has(info.cid)) {
+            results.push({ input: label, name: info.name, status: 'exists', message: '這次貼的連結裡重複了' });
+            continue;
+          }
+          seen.add(info.cid);
+          const dup = await db.from('restaurants').select('name').eq('google_cid', info.cid).maybeSingle();
+          if (dup.data) {
+            results.push({ input: label, name: dup.data.name, status: 'exists', message: '已經在清單裡' });
+            continue;
+          }
         }
 
         await sleep(3500);
         const data = await searchPlace(apiKey, info.name, info.lat, info.lng, db);
-        const place = (data.places || []).find((p) => String(p.googleMapsUri || '').includes(`cid=${info.cid}`));
+        const places = data.places || [];
+        let place = info.cid ? places.find((p) => String(p.googleMapsUri || '').includes(`cid=${info.cid}`)) : null;
+        if (!place && !info.cid) {
+          // 網址沒有店家編號時，改用店名比對：Google 回傳的店名要出現在網址的店名裡，或兩者夠像
+          const qn = normName(info.name);
+          place = places.find((p) => {
+            const dn = normName(p.displayName?.text);
+            return (dn.length >= 2 && qn.includes(dn)) || nameSim(info.name, p.displayName?.text) >= 0.5;
+          });
+        }
         if (!place) throw new Error(`Google 搜尋「${info.name}」沒有對到同一間店`);
+        if (!info.cid) info.cid = (String(place.googleMapsUri || '').match(/cid=(\d+)/) || [])[1] || null;
 
         const dup2 = await db.from('restaurants').select('name').eq('place_id', place.id).maybeSingle();
         if (dup2.data) {

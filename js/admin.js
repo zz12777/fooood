@@ -427,7 +427,15 @@ async function addPlaces() {
     for (let i = 0; i < lines.length; i += ADD_CHUNK) {
       const chunk = lines.slice(i, i + ADD_CHUNK);
       addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 筆，共 ${lines.length} 筆`);
-      const results = await callAdd(chunk);
+      // 共同備註放前面，每行自己的備註接在後面；文字框裡留的仍是原本那行，重試時不會重複加
+      const common = $('#add-note').value.trim();
+      const sent = chunk.map((line) => {
+        const m = line.match(/https?:\/\/\S+/);
+        if (!m || !common) return line;
+        const own = line.replace(m[0], '').trim();
+        return `${m[0]} ${[common, own].filter(Boolean).join(' ')}`;
+      });
+      const results = await callAdd(sent);
       results.forEach((r, k) => {
         if (r.status === 'added') {
           added += 1;
