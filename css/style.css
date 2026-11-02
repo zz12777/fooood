@@ -436,27 +436,15 @@ main {
   color: var(--ink);
   background: linear-gradient(transparent 58%, var(--mark, var(--yellow)) 58%);
 }
-/* 每個篩選分類各自一個框；小標統一用綠色，由淺到深 */
+/* 每個篩選分類各自一個框；小標與選取狀態統一用綠色 */
 .filters-body .group {
   padding: 16px;
   background: var(--card);
   border: 1.5px solid var(--line);
   border-radius: var(--radius);
 }
-.filters-body .group:nth-child(1) h3 {
-  --mark: #e3f0da;
-}
-.filters-body .group:nth-child(2) h3 {
-  --mark: #d3e8c5;
-}
-.filters-body .group:nth-child(3) h3 {
-  --mark: #c3e0b0;
-}
-.filters-body .group-when h3 {
-  --mark: #b3d79c;
-}
-.filters-body .group-near h3 {
-  --mark: #a3ce88;
+.filters-body .group h3 {
+  --mark: var(--green);
 }
 .group-pair {
   display: grid;
@@ -485,7 +473,7 @@ main {
   background: var(--paper-2);
 }
 .near-way[aria-pressed='true'] {
-  background: var(--yellow);
+  background: var(--green);
 }
 .near-sentence {
   display: flex;
@@ -493,7 +481,7 @@ main {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: var(--yellow-soft);
+  background: var(--green-soft);
   border-radius: 12px;
 }
 .near-sentence input,
@@ -583,13 +571,7 @@ main {
 .chip[aria-pressed='true'] .ico {
   display: inline;
 }
-.chip-areas[aria-pressed='true'] {
-  background: var(--blue);
-}
-.chip-prices[aria-pressed='true'] {
-  background: var(--yellow);
-}
-.chip-cats[aria-pressed='true'] {
+.chip[aria-pressed='true'] {
   background: var(--green);
 }
 .chip[aria-pressed='true'] .n {
