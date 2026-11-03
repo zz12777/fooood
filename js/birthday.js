@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js';
-import { linkify, cleanAddress, fixAddressOrder } from './text.js';
+import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -72,12 +72,35 @@ function mapLink(br) {
   return `<a class="link link-map" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}Google Map</a>`;
 }
 
+const COUNTY_ORDER = ['新竹市', '新竹縣'];
+
+// 分店依縣市分組，新竹排最前面，其他縣市依分店數由多到少
+function branchGroups(branches) {
+  const m = new Map();
+  for (const br of branches) {
+    const c = countyFromAddress(br.address) || '其他';
+    if (!m.has(c)) m.set(c, []);
+    m.get(c).push(br);
+  }
+  return [...m.entries()].sort((a, b) => {
+    const ia = COUNTY_ORDER.indexOf(a[0]);
+    const ib = COUNTY_ORDER.indexOf(b[0]);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    return b[1].length - a[1].length;
+  });
+}
+
 function brandCard(b, i) {
   const list = b.branches.length
-    ? `<details class="bday-branches"><summary>新竹一帶分店 ${b.branches.length} 間</summary><ul>${b.branches
-        .map((br) => `<li><strong>${esc(br.name)}</strong><span class="addr">${esc(cleanAddress(br.address))}</span>${mapLink(br)}</li>`)
-        .join('')}</ul></details>`
-    : '<p class="addr">新竹一帶目前沒有分店資料</p>';
+    ? `<details class="bday-branches"><summary>分店 ${b.branches.length} 間</summary>${branchGroups(b.branches)
+        .map(
+          ([county, list]) =>
+            `<h4 class="bday-county">${esc(county)}（${list.length}）</h4><ul>${list
+              .map((br) => `<li><strong>${esc(br.name)}</strong><span class="addr">${esc(cleanAddress(br.address))}</span>${mapLink(br)}</li>`)
+              .join('')}</ul>`
+        )
+        .join('')}</details>`
+    : '<p class="addr">目前沒有分店資料</p>';
   return `<article class="card" style="--i:${Math.min(i, 8)}">
     <div class="card-top"><h3>${esc(b.brand)}</h3></div>
     <div class="tags">${tagsHtml(b)}</div>

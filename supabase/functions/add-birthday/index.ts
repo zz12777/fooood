@@ -2,15 +2,18 @@
 // 安全設計與 add-places 相同：
 // 1. Google 金鑰只存在 Supabase Secrets（GOOGLE_PLACES_API_KEY）。
 // 2. 呼叫者必須已登入且在 editors 白名單內（is_editor()），寫入也受 RLS 保護。
-// 3. 每個品牌搜尋一次 Google，一次最多拿 20 間分店，分店多時最多再翻 2 頁；每次呼叫間隔 3.5 秒。
-// 4. 只收新竹市與新竹縣主要鄉鎮範圍內、店名含品牌名稱的結果。
+// 3. 每個品牌先搜新竹一帶（最多 2 頁），再搜全台（最多 3 頁），每頁最多 20 間；每次呼叫間隔 3.5 秒。
+//    全台超過 60 間的大型連鎖，新竹以外只會收到一部分，新竹一帶則盡量收齊。
+// 4. 只收店名含品牌名稱或搜尋關鍵字的結果。
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const MAX_ITEMS = 4;
-const MAX_PAGES = 3;
-// 新竹市與竹北、竹東、新豐、湖口、寶山、芎林一帶
-const HSINCHU_RECT = { low: { latitude: 24.65, longitude: 120.85 }, high: { latitude: 24.95, longitude: 121.25 } };
+// 新竹市與竹北、竹東、新豐、湖口、寶山、芎林一帶，以及台灣本島與離島
+const SCOPES = [
+  { name: '新竹一帶', pages: 2, rect: { low: { latitude: 24.65, longitude: 120.85 }, high: { latitude: 24.95, longitude: 121.25 } } },
+  { name: '全台', pages: 3, rect: { low: { latitude: 21.8, longitude: 118.1 }, high: { latitude: 26.4, longitude: 122.1 } } },
+];
 
 // --- logic:start（純邏輯，可獨立測試）---
 function normName(s) {
@@ -24,6 +27,11 @@ function isBranch(displayName, brand, keyword) {
     const n = normName(k);
     return n.length >= 2 && d.includes(n);
   });
+}
+
+// 全台的搜尋範圍會碰到對岸沿海，排除中國大陸的地址
+function inTaiwan(address) {
+  return !/中国|中國|福建|省/.test(String(address || ''));
 }
 
 function cleanItem(it) {
@@ -70,9 +78,9 @@ async function logUsage(db) {
   }
 }
 
-async function searchPage(apiKey, db, query, pageToken) {
+async function searchPage(apiKey, db, query, rect, pageToken) {
   await logUsage(db);
-  const body = { textQuery: query, languageCode: 'zh-TW', regionCode: 'TW', pageSize: 20, locationRestriction: { rectangle: HSINCHU_RECT } };
+  const body = { textQuery: query, languageCode: 'zh-TW', regionCode: 'TW', pageSize: 20, locationRestriction: { rectangle: rect } };
   if (pageToken) body.pageToken = pageToken;
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
@@ -121,39 +129,47 @@ Deno.serve(async (req) => {
         if (up.error) throw new Error(`寫入失敗：${up.error.message}`);
         const brandId = up.data.id;
 
-        let token = null;
         let found = 0;
         let added = 0;
-        for (let page = 0; page < MAX_PAGES; page++) {
-          await sleep(3500);
-          const data = await searchPage(apiKey, db, it.keyword || it.brand, token);
-          const rows = (data.places || [])
-            .filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY')
-            .filter((p) => isBranch(p.displayName?.text, it.brand, it.keyword))
-            .map((p) => ({
-              brand_id: brandId,
-              name: p.displayName?.text || it.brand,
-              address: p.formattedAddress || null,
-              lat: p.location?.latitude ?? null,
-              lng: p.location?.longitude ?? null,
-              place_id: p.id,
-              maps_url: p.googleMapsUri || null,
-            }));
-          found += rows.length;
-          if (rows.length) {
-            const ins = await db.from('birthday_branches').upsert(rows, { onConflict: 'place_id', ignoreDuplicates: true }).select('id');
-            if (ins.error) throw new Error(`分店寫入失敗：${ins.error.message}`);
-            added += (ins.data || []).length;
+        const seenIds = new Set();
+        for (const scope of SCOPES) {
+          let token = null;
+          for (let page = 0; page < scope.pages; page++) {
+            await sleep(3500);
+            const data = await searchPage(apiKey, db, it.keyword || it.brand, scope.rect, token);
+            const rows = (data.places || [])
+              .filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY')
+              .filter((p) => isBranch(p.displayName?.text, it.brand, it.keyword))
+              .filter((p) => inTaiwan(p.formattedAddress))
+              .filter((p) => !seenIds.has(p.id))
+              .map((p) => {
+                seenIds.add(p.id);
+                return {
+                  brand_id: brandId,
+                  name: p.displayName?.text || it.brand,
+                  address: p.formattedAddress || null,
+                  lat: p.location?.latitude ?? null,
+                  lng: p.location?.longitude ?? null,
+                  place_id: p.id,
+                  maps_url: p.googleMapsUri || null,
+                };
+              });
+            found += rows.length;
+            if (rows.length) {
+              const ins = await db.from('birthday_branches').upsert(rows, { onConflict: 'place_id', ignoreDuplicates: true }).select('id');
+              if (ins.error) throw new Error(`分店寫入失敗：${ins.error.message}`);
+              added += (ins.data || []).length;
+            }
+            token = data.nextPageToken;
+            if (!token) break;
           }
-          token = data.nextPageToken;
-          if (!token) break;
         }
         results.push({
           brand: it.brand,
           status: 'ok',
           found,
           added,
-          message: found ? `新竹一帶找到 ${found} 間分店，新加入 ${added} 間` : '新竹一帶沒有找到分店，優惠先存起來',
+          message: found ? `找到 ${found} 間分店，新加入 ${added} 間` : '沒有找到分店，優惠先存起來，可以在最後一欄填搜尋關鍵字再試',
         });
       } catch (e) {
         const msg = String(e.message || e);

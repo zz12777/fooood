@@ -632,7 +632,7 @@ async function loadBdayList() {
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   el.innerHTML = data
     .map(
-      (b) => `<li><div><strong>${esc(b.brand)}</strong>（新竹分店 ${b.branches?.[0]?.count ?? 0} 間）<br><span class="muted">${esc(b.offer)}</span></div>
+      (b) => `<li><div><strong>${esc(b.brand)}</strong>（分店 ${b.branches?.[0]?.count ?? 0} 間）<br><span class="muted">${esc(b.offer)}</span></div>
       <button type="button" class="btn-text" data-bday-del="${b.id}" data-name="${esc(b.brand)}">刪除</button></li>`
     )
     .join('');

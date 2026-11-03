@@ -915,6 +915,11 @@ main {
   color: var(--blue-deep);
   min-height: 32px;
 }
+.bday-county {
+  margin-top: 12px;
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+}
 .bday-branches ul {
   display: grid;
   gap: 10px;
