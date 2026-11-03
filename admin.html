@@ -19,7 +19,7 @@
       <span class="brand-mark" id="brand-mark"></span>
       <h1>管理</h1>
     </div>
-    <nav class="top-links"><a class="back" href="review.html">整理店家</a><a class="back" href="./">回到清單</a></nav>
+    <nav class="top-links"><a class="back" href="review.html">整理店家</a><a class="back" href="birthday.html">壽星優惠</a><a class="back" href="./">回到清單</a></nav>
   </header>
 
   <main class="admin">
@@ -138,6 +138,24 @@
         </div>
         <ol class="log" id="add-log" aria-live="polite"></ol>
       </section>
+      <section class="panel" aria-labelledby="bday-title">
+        <h2 id="bday-title">壽星優惠</h2>
+        <p class="muted">
+          一行一個品牌，欄位用「｜」隔開：品牌｜優惠內容｜標籤｜備註｜來源｜搜尋關鍵字。後面四欄可以留空，標籤用逗號隔開，最好用現有的類別名稱。
+          每個品牌會用 Google 搜尋一次，把新竹一帶的分店都找出來，大約用 1 到 3 次查詢額度。品牌已經存在時，會更新優惠內容並補上新分店。
+        </p>
+        <label class="field field-wide">
+          <span class="sr">壽星優惠資料</span>
+          <textarea id="bday-input" rows="6" placeholder="星巴克｜綠/金星級會員中杯以上贈蛋糕乙片，指定商品 85 折｜咖啡廳｜需先加入會員｜省錢主婦 @meiya.49kg"></textarea>
+        </label>
+        <div class="row actions">
+          <button type="button" class="btn-primary" id="bday-add">新增或更新</button>
+          <button type="button" class="btn-secondary" id="bday-stop" hidden>停止</button>
+        </div>
+        <ol class="log" id="bday-log" aria-live="polite"></ol>
+        <h3 class="sub-title">目前的壽星優惠</h3>
+        <ul class="bday-list" id="bday-list"></ul>
+      </section>
       <section class="panel" aria-labelledby="cat-title">
         <h2 id="cat-title">自動分類未分類的店</h2>
         <p class="muted">
@@ -151,6 +169,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261102b"></script>
+  <script type="module" src="js/admin.js?v=20261104"></script>
 </body>
 </html>

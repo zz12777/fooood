@@ -883,3 +883,60 @@ main {
   text-decoration: none;
   white-space: nowrap;
 }
+
+/* ---------- 壽星優惠 ---------- */
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.top-actions .btn-secondary {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 1rem;
+}
+.bday-intro {
+  display: grid;
+  gap: 8px;
+}
+.bday-intro h2 {
+  font-size: 1.5rem;
+}
+.bday-offer {
+  padding: 10px 12px;
+  background: var(--green-soft);
+  border-left: 4px solid var(--green);
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.bday-branches summary {
+  cursor: pointer;
+  color: var(--blue-deep);
+  min-height: 32px;
+}
+.bday-branches ul {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bday-branches li {
+  display: grid;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.top {
+  flex-wrap: wrap;
+}
+.brand h1 {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .top-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}

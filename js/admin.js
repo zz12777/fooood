@@ -44,6 +44,7 @@ async function route() {
   }
   show('main');
   refreshStats();
+  loadBdayList();
 }
 
 async function logout() {
@@ -603,9 +604,140 @@ $('#list-stop').addEventListener('click', () => {
   $('#list-log').insertAdjacentHTML('beforeend', '<li>收到，這一批處理完就停（最多 6 間）。</li>');
 });
 
+/* ---------- 壽星優惠 ---------- */
+
+const BDAY_CHUNK = 3;
+let bdayRunning = false;
+let bdayStop = false;
+
+function parseBdayLine(line) {
+  const f = line.split(/[｜|]/).map((s) => s.trim());
+  return { brand: f[0] || '', offer: f[1] || '', tags: f[2] || '', note: f[3] || '', source: f[4] || '', keyword: f[5] || '' };
+}
+
+async function loadBdayList() {
+  const el = $('#bday-list');
+  const { data, error } = await sb
+    .from('birthday_brands')
+    .select('id,brand,offer,tags,branches:birthday_branches(count)')
+    .order('brand');
+  if (error) {
+    el.innerHTML = `<li class="muted">${/does not exist|schema cache/.test(error.message) ? '尚未啟用，請先執行 009_birthday.sql' : '讀取失敗'}</li>`;
+    return;
+  }
+  if (!data.length) {
+    el.innerHTML = '<li class="muted">還沒有資料</li>';
+    return;
+  }
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  el.innerHTML = data
+    .map(
+      (b) => `<li><div><strong>${esc(b.brand)}</strong>（新竹分店 ${b.branches?.[0]?.count ?? 0} 間）<br><span class="muted">${esc(b.offer)}</span></div>
+      <button type="button" class="btn-text" data-bday-del="${b.id}" data-name="${esc(b.brand)}">刪除</button></li>`
+    )
+    .join('');
+}
+
+$('#bday-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-bday-del]');
+  if (!btn) return;
+  // 按第一次變成「確定刪除？」，再按一次才刪，避免誤按
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = '確定刪除？';
+    setTimeout(() => {
+      delete btn.dataset.armed;
+      btn.textContent = '刪除';
+    }, 4000);
+    return;
+  }
+  const { error } = await sb.from('birthday_brands').delete().eq('id', Number(btn.dataset.bdayDel));
+  if (error) btn.textContent = '刪除失敗';
+  else loadBdayList();
+});
+
+async function addBdays() {
+  const lines = $('#bday-input')
+    .value.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!lines.length) return;
+  bdayRunning = true;
+  bdayStop = false;
+  $('#bday-add').disabled = true;
+  $('#bday-stop').hidden = false;
+  $('#bday-stop').disabled = false;
+  const out = $('#bday-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+    li.scrollIntoView({ block: 'nearest' });
+  };
+  let done = 0;
+  const retry = [];
+  const sync = () => {
+    $('#bday-input').value = [...retry, ...lines.slice(done)].join('\n');
+    saveBday();
+  };
+  try {
+    for (let i = 0; i < lines.length; i += BDAY_CHUNK) {
+      if (bdayStop) {
+        addLog('已停止。剩下的留在文字框，之後再按一次就好。', 'error');
+        break;
+      }
+      const chunk = lines.slice(i, i + BDAY_CHUNK);
+      addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 個品牌，共 ${lines.length} 個`);
+      const { data, error } = await sb.functions.invoke('add-birthday', { body: { items: chunk.map(parseBdayLine) } });
+      if (error) {
+        let msg = error.message;
+        try {
+          const j = await error.context.json();
+          if (j && j.error) msg = j.error;
+        } catch {
+          /* 保留原本的訊息 */
+        }
+        throw new Error(msg);
+      }
+      const results = data.results || [];
+      results.forEach((r, k) => {
+        if (r.status === 'ok') addLog(`${r.brand}：${r.message}`, r.found ? 'ok' : '');
+        else {
+          retry.push(chunk[k]);
+          addLog(`${r.brand}：${r.message}`, 'error');
+        }
+      });
+      done = i + results.length;
+      sync();
+      if (results.length < chunk.length) {
+        addLog(shortReason(results, chunk.length), 'error');
+        break;
+      }
+    }
+    addLog('結束。', 'ok');
+  } catch (e) {
+    sync();
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    bdayRunning = false;
+    $('#bday-add').disabled = false;
+    $('#bday-stop').hidden = true;
+    loadBdayList();
+    refreshStats();
+  }
+}
+$('#bday-add').addEventListener('click', () => !bdayRunning && addBdays());
+$('#bday-stop').addEventListener('click', () => {
+  bdayStop = true;
+  $('#bday-stop').disabled = true;
+});
+
 const saveAdd = keepText('#add-input', 'fooood:pending-links');
 const saveNames = keepText('#list-names', 'fooood:pending-names');
 const saveMiss = keepText('#list-miss', 'fooood:missed-names');
+const saveBday = keepText('#bday-input', 'fooood:pending-bday');
 
 $('#brand-mark').innerHTML = mark();
 route();

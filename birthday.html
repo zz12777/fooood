@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>壽星優惠 | 新竹吃什麼</title>
+  <meta name="description" content="生日快到了嗎？看看新竹附近哪些店家有壽星優惠。">
+  <meta name="theme-color" content="#FBF7EA">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20261104">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" id="brand-mark"></span>
+      <h1>壽星優惠</h1>
+    </div>
+    <a class="btn-secondary suggest" href="./">回到餐廳清單</a>
+  </header>
+
+  <main>
+    <section class="bday-intro">
+      <h2>生日快到了嗎？</h2>
+      <p>看看附近哪些店家有壽星優惠。很多優惠要先加入會員，或要在生日前就註冊，記得看每間的備註。</p>
+      <p class="near-note">優惠內容整理自網路分享，可能已經更新，實際以各店家官方公告為準。</p>
+    </section>
+
+    <details class="filters" id="filters" open>
+      <summary>
+        <span class="summary-label" id="filters-label"></span>
+        <span class="badge" id="filter-badge" hidden></span>
+      </summary>
+      <div class="filters-body">
+        <div class="group">
+          <h3>類別</h3>
+          <div class="chips" id="filter-tags"></div>
+        </div>
+        <div class="group group-near">
+          <h3>附近</h3>
+          <div class="near">
+            <div class="near-ways">
+              <button type="button" class="near-way" data-near-way="street" aria-pressed="false">以街道查詢</button>
+              <button type="button" class="near-way" data-near-way="gps" aria-pressed="false">使用目前位置</button>
+            </div>
+            <form class="near-sentence" id="near-form" hidden>
+              <span>搜尋離</span>
+              <label class="sr" for="near-input">起點的街道或地址</label>
+              <input type="text" id="near-input" placeholder="例如 大學路" autocomplete="street-address">
+              <span class="near-here" id="near-here" hidden>目前位置</span>
+              <label class="sr" for="near-mode">交通方式</label>
+              <select id="near-mode"></select>
+              <label class="sr" for="near-min">幾分鐘內</label>
+              <select id="near-min"></select>
+              <span>分鐘內的分店</span>
+              <button type="submit" class="btn-primary near-go">搜尋</button>
+            </form>
+            <p class="near-status" id="near-status" aria-live="polite"></p>
+            <div class="chips" id="near-choices"></div>
+            <button type="button" class="btn-text" id="near-cancel" hidden>取消附近篩選</button>
+            <p class="near-note" id="near-note" hidden>依直線距離由近到遠排，分鐘數只是粗略估算，會多放寬 20%。實際時間請點卡片上的「路線」。</p>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <section class="list-section" aria-labelledby="list-title">
+      <div class="list-head">
+        <h2 id="list-title">優惠清單</h2>
+      </div>
+      <div id="list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>想推薦壽星優惠？<a class="foot-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer">告訴我們</a></p>
+  </footer>
+
+  <script type="module" src="js/birthday.js?v=20261104"></script>
+</body>
+</html>
