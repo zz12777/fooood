@@ -905,8 +905,8 @@ main {
 }
 .bday-offer {
   padding: 10px 12px;
-  background: var(--green-soft);
-  border-left: 4px solid var(--green);
+  background: var(--blue-soft);
+  border-left: 4px solid var(--blue);
   border-radius: 10px;
   line-height: 1.6;
 }

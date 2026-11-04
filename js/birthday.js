@@ -15,6 +15,9 @@ const safeUrl = (u) => {
   }
 };
 
+// 附近搜尋先關閉；要恢復時改成 true，並把 birthday.html 裡附近的註解拿掉
+const NEAR_ENABLED = false;
+
 const state = {
   brands: [],
   tags: new Set(),
@@ -25,7 +28,9 @@ const state = {
 
 async function load() {
   const path =
-    'birthday_brands?select=id,brand,offer,tags,note,source,branches:birthday_branches(id,name,address,lat,lng,maps_url)&order=brand';
+    NEAR_ENABLED
+      ? 'birthday_brands?select=id,brand,keyword,offer,tags,note,source,branches:birthday_branches(id,name,address,lat,lng,maps_url)&order=brand'
+      : 'birthday_brands?select=id,brand,keyword,offer,tags,note,source&order=brand';
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: SUPABASE_KEY, Accept: 'application/json' } });
   if (!res.ok) throw new Error(`資料庫回應 ${res.status}`);
   const rows = await res.json();
@@ -91,22 +96,15 @@ function branchGroups(branches) {
 }
 
 function brandCard(b, i) {
-  const list = b.branches.length
-    ? `<details class="bday-branches"><summary>分店 ${b.branches.length} 間</summary>${branchGroups(b.branches)
-        .map(
-          ([county, list]) =>
-            `<h4 class="bday-county">${esc(county)}（${list.length}）</h4><ul>${list
-              .map((br) => `<li><strong>${esc(br.name)}</strong><span class="addr">${esc(cleanAddress(br.address))}</span>${mapLink(br)}</li>`)
-              .join('')}</ul>`
-        )
-        .join('')}</details>`
-    : '<p class="addr">目前沒有分店資料</p>';
+  const q = encodeURIComponent(b.brand);
   return `<article class="card" style="--i:${Math.min(i, 8)}">
     <div class="card-top"><h3>${esc(b.brand)}</h3></div>
     <div class="tags">${tagsHtml(b)}</div>
     <p class="bday-offer">${esc(b.offer)}</p>
     ${extraHtml(b)}
-    ${list}
+    <div class="card-foot">
+      <a class="link link-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}在 Google Map 找分店</a>
+    </div>
   </article>`;
 }
 
@@ -144,7 +142,7 @@ function renderList() {
     el.innerHTML = '<div class="state"><h3>還沒有壽星優惠</h3><p>整理好之後就會出現在這裡。</p></div>';
     return;
   }
-  if (state.near.origin) {
+  if (NEAR_ENABLED && state.near.origin) {
     const list = nearbyBranches();
     $('#list-title').textContent = '附近的壽星優惠';
     el.innerHTML = list.length
@@ -160,6 +158,7 @@ function renderList() {
 }
 
 function renderNear() {
+  if (!NEAR_ENABLED) return;
   const n = state.near;
   document.querySelectorAll('[data-near-way]').forEach((b) => b.setAttribute('aria-pressed', String(n.how === b.dataset.nearWay)));
   $('#near-form').hidden = !n.how;
@@ -230,6 +229,7 @@ function bind() {
       if (c) setOrigin(c, c.label);
     }
   });
+  if (!NEAR_ENABLED) return;
   document.querySelectorAll('[data-near-way]').forEach((b) =>
     b.addEventListener('click', () => {
       const n = state.near;
@@ -259,7 +259,7 @@ function bind() {
 
 async function start() {
   $('#brand-mark').innerHTML = mark();
-  $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選類別、附近</span>`;
+  $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選類別</span>`;
   bind();
   renderNear();
   $('#list').innerHTML = '<div class="state"><h3>載入中</h3><p>稍等一下。</p></div>';

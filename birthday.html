@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261104b">
+  <link rel="stylesheet" href="css/style.css?v=20261104c">
 </head>
 <body>
   <header class="top">
@@ -24,7 +24,6 @@
   <main>
     <section class="bday-intro">
       <h2>生日快到了嗎？</h2>
-      <p>看看附近哪些店家有壽星優惠，新竹以外的縣市也有收錄。很多優惠要先加入會員，或要在生日前就註冊，記得看每間的備註。</p>
       <p class="near-note">優惠內容整理自網路分享，可能已經更新，實際以各店家官方公告為準。</p>
     </section>
 
@@ -38,6 +37,7 @@
           <h3>類別</h3>
           <div class="chips" id="filter-tags"></div>
         </div>
+        <!-- 附近搜尋先關閉：壽星優惠只列品牌與優惠，分店請自行查詢。要恢復時把這段註解拿掉，並把 js/birthday.js 的 NEAR_ENABLED 改成 true。
         <div class="group group-near">
           <h3>附近</h3>
           <div class="near">
@@ -63,6 +63,7 @@
             <p class="near-note" id="near-note" hidden>依直線距離由近到遠排，分鐘數只是粗略估算，會多放寬 20%。實際時間請點卡片上的「路線」。</p>
           </div>
         </div>
+        -->
       </div>
     </details>
 
@@ -78,6 +79,6 @@
     <p>想推薦壽星優惠？<a class="foot-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer">告訴我們</a></p>
   </footer>
 
-  <script type="module" src="js/birthday.js?v=20261104b"></script>
+  <script type="module" src="js/birthday.js?v=20261104c"></script>
 </body>
 </html>

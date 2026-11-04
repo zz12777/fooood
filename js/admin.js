@@ -606,7 +606,7 @@ $('#list-stop').addEventListener('click', () => {
 
 /* ---------- 壽星優惠 ---------- */
 
-const BDAY_CHUNK = 3;
+const BDAY_CHUNK = 10;
 let bdayRunning = false;
 let bdayStop = false;
 
@@ -619,7 +619,7 @@ async function loadBdayList() {
   const el = $('#bday-list');
   const { data, error } = await sb
     .from('birthday_brands')
-    .select('id,brand,offer,tags,branches:birthday_branches(count)')
+    .select('id,brand,offer,tags')
     .order('brand');
   if (error) {
     el.innerHTML = `<li class="muted">${/does not exist|schema cache/.test(error.message) ? '尚未啟用，請先執行 009_birthday.sql' : '讀取失敗'}</li>`;
@@ -632,7 +632,7 @@ async function loadBdayList() {
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   el.innerHTML = data
     .map(
-      (b) => `<li><div><strong>${esc(b.brand)}</strong>（分店 ${b.branches?.[0]?.count ?? 0} 間）<br><span class="muted">${esc(b.offer)}</span></div>
+      (b) => `<li><div><strong>${esc(b.brand)}</strong><br><span class="muted">${esc(b.offer)}</span></div>
       <button type="button" class="btn-text" data-bday-del="${b.id}" data-name="${esc(b.brand)}">刪除</button></li>`
     )
     .join('');
@@ -690,20 +690,31 @@ async function addBdays() {
       }
       const chunk = lines.slice(i, i + BDAY_CHUNK);
       addLog(`處理第 ${i + 1} 到 ${i + chunk.length} 個品牌，共 ${lines.length} 個`);
-      const { data, error } = await sb.functions.invoke('add-birthday', { body: { items: chunk.map(parseBdayLine) } });
-      if (error) {
-        let msg = error.message;
-        try {
-          const j = await error.context.json();
-          if (j && j.error) msg = j.error;
-        } catch {
-          /* 保留原本的訊息 */
+      // 只存品牌與優惠，不再找分店，所以不用呼叫 Google，也不花查詢額度
+      const results = [];
+      for (const line of chunk) {
+        const it = parseBdayLine(line);
+        const tags = it.tags.split(/[,，、]/).map((t) => t.trim()).filter(Boolean);
+        if (!it.brand || !it.offer) {
+          results.push({ brand: it.brand || '(空白)', status: 'failed', message: '品牌和優惠都要填' });
+          continue;
         }
-        throw new Error(msg);
+        const { error } = await sb.from('birthday_brands').upsert(
+          {
+            brand: it.brand,
+            offer: it.offer,
+            tags,
+            note: it.note || null,
+            source: it.source || null,
+            keyword: it.keyword || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'brand' }
+        );
+        results.push(error ? { brand: it.brand, status: 'failed', message: error.message } : { brand: it.brand, status: 'ok', message: '已存好' });
       }
-      const results = data.results || [];
       results.forEach((r, k) => {
-        if (r.status === 'ok') addLog(`${r.brand}：${r.message}`, r.found ? 'ok' : '');
+        if (r.status === 'ok') addLog(`${r.brand}：${r.message}`, 'ok');
         else {
           retry.push(chunk[k]);
           addLog(`${r.brand}：${r.message}`, 'error');
