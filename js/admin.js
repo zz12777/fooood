@@ -630,13 +630,24 @@ async function loadBdayList() {
     return;
   }
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  $('#bday-summary').textContent = `管理現有優惠（共 ${data.length} 筆，刪除用）`;
   el.innerHTML = data
     .map(
-      (b) => `<li><div><strong>${esc(b.brand)}</strong><br><span class="muted">${esc(b.offer)}</span></div>
-      <button type="button" class="btn-text" data-bday-del="${b.id}" data-name="${esc(b.brand)}">刪除</button></li>`
+      (b) => `<li data-name="${esc(b.brand.toLowerCase())}"><div><strong>${esc(b.brand)}</strong><span class="muted">${esc(b.offer)}</span></div>
+      <button type="button" class="btn-text" data-bday-del="${b.id}">刪除</button></li>`
     )
     .join('');
+  filterBdayList();
 }
+
+// 依輸入的文字只顯示符合的品牌
+function filterBdayList() {
+  const q = $('#bday-search').value.trim().toLowerCase();
+  document.querySelectorAll('#bday-list li[data-name]').forEach((li) => {
+    li.hidden = !!q && !li.dataset.name.includes(q);
+  });
+}
+$('#bday-search').addEventListener('input', filterBdayList);
 
 $('#bday-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-bday-del]');

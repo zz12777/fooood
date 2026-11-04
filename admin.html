@@ -153,8 +153,14 @@
           <button type="button" class="btn-secondary" id="bday-stop" hidden>停止</button>
         </div>
         <ol class="log" id="bday-log" aria-live="polite"></ol>
-        <h3 class="sub-title">目前的壽星優惠</h3>
-        <ul class="bday-list" id="bday-list"></ul>
+        <details class="bday-manage">
+          <summary id="bday-summary">管理現有優惠（刪除用）</summary>
+          <label class="field field-wide">
+            <span class="sr">搜尋品牌</span>
+            <input type="search" id="bday-search" placeholder="輸入品牌名稱找要刪的優惠" />
+          </label>
+          <ul class="bday-list" id="bday-list"></ul>
+        </details>
       </section>
       <section class="panel" aria-labelledby="cat-title">
         <h2 id="cat-title">自動分類未分類的店</h2>
@@ -169,6 +175,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261104c"></script>
+  <script type="module" src="js/admin.js?v=20261104d"></script>
 </body>
 </html>
