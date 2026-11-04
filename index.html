@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261104">
+  <link rel="stylesheet" href="css/style.css?v=20261104e">
 </head>
 <body>
   <a class="skip" href="#list">跳到餐廳清單</a>
@@ -20,11 +20,12 @@
       <span class="brand-mark" id="brand-mark"></span>
       <h1>新竹吃什麼</h1>
     </div>
-    <nav class="top-actions">
-      <a class="btn-secondary suggest" href="birthday.html">壽星優惠</a>
-      <a class="btn-secondary suggest" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer">推薦店家/新增評論表單</a>
-    </nav>
+    <a class="ext-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer"><span>推薦店家/新增評論表單</span><span class="ext-icon" data-icon="external"></span><span class="sr">（開啟外部表單）</span></a>
   </header>
+  <nav class="tabs" aria-label="頁面">
+    <a class="tab" href="./" aria-current="page">餐廳清單</a>
+    <a class="tab" href="birthday.html">壽星優惠</a>
+  </nav>
 
   <p class="demo-banner" id="demo-banner" hidden>目前看到的是示範資料，店家都是虛構的，不是你的收藏。</p>
 
@@ -142,6 +143,6 @@
     <p>用來把想吃的店收在同一個地方。<a class="foot-link" href="admin.html">管理</a></p>
   </footer>
 
-  <script type="module" src="js/app.js?v=20261102c"></script>
+  <script type="module" src="js/app.js?v=20261104e"></script>
 </body>
 </html>

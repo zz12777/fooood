@@ -12,6 +12,7 @@ export const icon = {
   search: (s) => ico('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', s),
   sliders: (s) => ico('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>', s),
   clock: (s) => ico('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', s),
+  external: (s) => ico('<path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>', s),
   close: (s) => ico('<path d="M6 6l12 12M18 6L6 18"/>', s),
   dice: (s) => ico('<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.1" fill="currentColor" stroke="none"/>', s),
 };

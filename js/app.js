@@ -633,6 +633,7 @@ function clearFilters() {
 
 function setupStatic() {
   $('#brand-mark').innerHTML = mark();
+  document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon[el.dataset.icon](16)));
   renderNear();
   renderWhen();
   $('#draw-art').innerHTML = bowl();

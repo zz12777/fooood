@@ -10,16 +10,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261104c">
+  <link rel="stylesheet" href="css/style.css?v=20261104e">
 </head>
 <body>
   <header class="top">
     <div class="brand">
       <span class="brand-mark" id="brand-mark"></span>
-      <h1>壽星優惠</h1>
+      <h1>新竹吃什麼</h1>
     </div>
-    <a class="btn-secondary suggest" href="./">回到餐廳清單</a>
+    <a class="ext-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer"><span>推薦店家/新增評論表單</span><span class="ext-icon" data-icon="external"></span><span class="sr">（開啟外部表單）</span></a>
   </header>
+  <nav class="tabs" aria-label="頁面">
+    <a class="tab" href="./">餐廳清單</a>
+    <a class="tab" href="birthday.html" aria-current="page">壽星優惠</a>
+  </nav>
 
   <main>
     <section class="bday-intro">
@@ -27,16 +31,9 @@
       <p class="near-note">優惠內容整理自網路分享，可能已經更新，實際以各店家官方公告為準。</p>
     </section>
 
-    <details class="filters" id="filters" open>
-      <summary>
-        <span class="summary-label" id="filters-label"></span>
-        <span class="badge" id="filter-badge" hidden></span>
-      </summary>
-      <div class="filters-body">
-        <div class="group">
-          <h3>類別</h3>
-          <div class="chips" id="filter-tags"></div>
-        </div>
+    <section class="bday-filter" id="filters" aria-labelledby="tags-title">
+      <h3 id="tags-title" class="sr">依類別篩選</h3>
+      <div class="chips" id="filter-tags"></div>
         <!-- 附近搜尋先關閉：壽星優惠只列品牌與優惠，分店請自行查詢。要恢復時把這段註解拿掉，並把 js/birthday.js 的 NEAR_ENABLED 改成 true。
         <div class="group group-near">
           <h3>附近</h3>
@@ -64,8 +61,7 @@
           </div>
         </div>
         -->
-      </div>
-    </details>
+    </section>
 
     <section class="list-section" aria-labelledby="list-title">
       <div class="list-head">
@@ -79,6 +75,6 @@
     <p>想推薦壽星優惠？<a class="foot-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer">告訴我們</a></p>
   </footer>
 
-  <script type="module" src="js/birthday.js?v=20261104c"></script>
+  <script type="module" src="js/birthday.js?v=20261104e"></script>
 </body>
 </html>

@@ -180,8 +180,6 @@ function renderNear() {
 
 function refresh() {
   const n = state.tags.size + (state.near.origin ? 1 : 0);
-  $('#filter-badge').hidden = n === 0;
-  $('#filter-badge').textContent = `${n} 項`;
   renderTags();
   renderNear();
   renderList();
@@ -259,7 +257,7 @@ function bind() {
 
 async function start() {
   $('#brand-mark').innerHTML = mark();
-  $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選類別</span>`;
+  document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon[el.dataset.icon](16)));
   bind();
   renderNear();
   $('#list').innerHTML = '<div class="state"><h3>載入中</h3><p>稍等一下。</p></div>';
