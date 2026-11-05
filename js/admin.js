@@ -615,32 +615,64 @@ function parseBdayLine(line) {
   return { brand: f[0] || '', offer: f[1] || '', tags: f[2] || '', note: f[3] || '', source: f[4] || '', keyword: f[5] || '' };
 }
 
+let bdayRows = [];
+const escA = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
 async function loadBdayList() {
   const el = $('#bday-list');
   const { data, error } = await sb
     .from('birthday_brands')
-    .select('id,brand,offer,tags')
+    .select('id,brand,offer,tags,note,source')
     .order('brand');
   if (error) {
     el.innerHTML = `<li class="muted">${/does not exist|schema cache/.test(error.message) ? '尚未啟用，請先執行 009_birthday.sql' : '讀取失敗'}</li>`;
     return;
   }
+  bdayRows = data;
+  $('#bday-summary').textContent = `修改或刪除現有優惠（共 ${data.length} 筆）`;
   if (!data.length) {
     el.innerHTML = '<li class="muted">還沒有資料</li>';
     return;
   }
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  $('#bday-summary').textContent = `管理現有優惠（共 ${data.length} 筆，刪除用）`;
-  el.innerHTML = data
-    .map(
-      (b) => `<li data-name="${esc(b.brand.toLowerCase())}"><div><strong>${esc(b.brand)}</strong><span class="muted">${esc(b.offer)}</span></div>
-      <button type="button" class="btn-text" data-bday-del="${b.id}">刪除</button></li>`
-    )
-    .join('');
+  el.innerHTML = data.map(bdayRowHtml).join('');
   filterBdayList();
 }
 
-// 依輸入的文字只顯示符合的品牌
+function bdayRowHtml(b) {
+  return `<li data-id="${b.id}" data-name="${escA(`${b.brand} ${(b.tags || []).join(' ')}`.toLowerCase())}">
+    <div><strong>${escA(b.brand)}</strong><span class="muted">${escA(b.offer)}</span></div>
+    <span class="bday-actions">
+      <button type="button" class="btn-text" data-bday-edit="${b.id}">修改</button>
+      <button type="button" class="btn-text" data-bday-del="${b.id}">刪除</button>
+    </span>
+  </li>`;
+}
+
+// 修改表單：直接在那一列展開，存檔後回到一般顯示
+function bdayEditHtml(b) {
+  const f = (label, name, value, area = false) =>
+    `<label class="field field-wide"><span>${label}</span>${
+      area
+        ? `<textarea name="${name}" rows="2">${escA(value)}</textarea>`
+        : `<input type="text" name="${name}" value="${escA(value)}" />`
+    }</label>`;
+  return `<li data-id="${b.id}" class="is-editing">
+    <form class="bday-edit" data-bday-form="${b.id}">
+      ${f('品牌', 'brand', b.brand)}
+      ${f('優惠內容', 'offer', b.offer, true)}
+      ${f('標籤（用逗號隔開）', 'tags', (b.tags || []).join(', '))}
+      ${f('備註', 'note', b.note || '', true)}
+      ${f('來源（可以放多個網址，用空白隔開）', 'source', b.source || '')}
+      <div class="row actions">
+        <button type="submit" class="btn-primary">儲存</button>
+        <button type="button" class="btn-secondary" data-bday-cancel="${b.id}">取消</button>
+      </div>
+      <p class="status" aria-live="polite"></p>
+    </form>
+  </li>`;
+}
+
+// 依輸入的文字只顯示符合的品牌（也比對標籤）
 function filterBdayList() {
   const q = $('#bday-search').value.trim().toLowerCase();
   document.querySelectorAll('#bday-list li[data-name]').forEach((li) => {
@@ -650,6 +682,18 @@ function filterBdayList() {
 $('#bday-search').addEventListener('input', filterBdayList);
 
 $('#bday-list').addEventListener('click', async (e) => {
+  const edit = e.target.closest('[data-bday-edit]');
+  if (edit) {
+    const b = bdayRows.find((x) => x.id === Number(edit.dataset.bdayEdit));
+    if (b) edit.closest('li').outerHTML = bdayEditHtml(b);
+    return;
+  }
+  const cancel = e.target.closest('[data-bday-cancel]');
+  if (cancel) {
+    const b = bdayRows.find((x) => x.id === Number(cancel.dataset.bdayCancel));
+    if (b) cancel.closest('li').outerHTML = bdayRowHtml(b);
+    return;
+  }
   const btn = e.target.closest('[data-bday-del]');
   if (!btn) return;
   // 按第一次變成「確定刪除？」，再按一次才刪，避免誤按
@@ -665,6 +709,37 @@ $('#bday-list').addEventListener('click', async (e) => {
   const { error } = await sb.from('birthday_brands').delete().eq('id', Number(btn.dataset.bdayDel));
   if (error) btn.textContent = '刪除失敗';
   else loadBdayList();
+});
+
+$('#bday-list').addEventListener('submit', async (e) => {
+  const form = e.target.closest('[data-bday-form]');
+  if (!form) return;
+  e.preventDefault();
+  const id = Number(form.dataset.bdayForm);
+  const v = (n) => form.elements[n].value.trim();
+  const status = form.querySelector('.status');
+  if (!v('brand') || !v('offer')) {
+    say(status, '品牌和優惠內容都要填', 'error');
+    return;
+  }
+  const upd = {
+    brand: v('brand'),
+    offer: v('offer'),
+    tags: v('tags').split(/[,，、]/).map((t) => t.trim()).filter(Boolean),
+    note: v('note') || null,
+    source: v('source') || null,
+    updated_at: new Date().toISOString(),
+  };
+  say(status, '儲存中');
+  const { error } = await sb.from('birthday_brands').update(upd).eq('id', id);
+  if (error) {
+    say(status, /duplicate|unique/.test(error.message) ? '已經有同名的品牌了' : `儲存失敗：${error.message}`, 'error');
+    return;
+  }
+  const b = bdayRows.find((x) => x.id === id);
+  Object.assign(b, upd);
+  form.closest('li').outerHTML = bdayRowHtml(b);
+  filterBdayList();
 });
 
 async function addBdays() {

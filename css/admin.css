@@ -172,7 +172,7 @@
 .bday-list {
   display: grid;
   gap: 4px;
-  max-height: 420px;
+  max-height: 520px;
   overflow-y: auto;
   padding: 0;
   list-style: none;
@@ -211,4 +211,17 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
+}
+.bday-actions {
+  display: flex;
+  gap: 12px;
+  flex: none;
+}
+.bday-list li.is-editing {
+  display: block;
+  padding: 12px;
+}
+.bday-edit {
+  display: grid;
+  gap: 8px;
 }

@@ -21,6 +21,7 @@ const NEAR_ENABLED = false;
 const state = {
   brands: [],
   tags: new Set(),
+  q: '',
   near: { how: null, origin: null, label: '', mode: 'bike', minutes: 15, busy: false, msg: '', choices: [] },
 };
 
@@ -43,7 +44,11 @@ async function load() {
 
 /* ---------- 篩選 ---------- */
 
-const brandMatches = (b) => !state.tags.size || b.tags.some((t) => state.tags.has(t));
+const brandMatches = (b) => {
+  if (state.tags.size && !b.tags.some((t) => state.tags.has(t))) return false;
+  if (!state.q) return true;
+  return `${b.brand} ${b.offer} ${b.note || ''} ${b.tags.join(' ')}`.toLowerCase().includes(state.q);
+};
 
 // 附近模式：把每間分店攤開，只留範圍內的，依距離排
 function nearbyBranches() {
@@ -154,7 +159,7 @@ function renderList() {
   const list = state.brands.filter(brandMatches);
   el.innerHTML = list.length
     ? `<div class="grid">${list.map(brandCard).join('')}</div>`
-    : '<div class="state"><h3>沒有符合的優惠</h3><p>換個類別看看。</p></div>';
+    : '<div class="state"><h3>沒有符合的優惠</h3><p>換個類別或關鍵字看看。</p></div>';
 }
 
 function renderNear() {
@@ -213,6 +218,10 @@ async function findOrigin() {
 }
 
 function bind() {
+  $('#search').addEventListener('input', (e) => {
+    state.q = e.target.value.trim().toLowerCase();
+    renderList();
+  });
   $('#filters').addEventListener('click', (e) => {
     const t = e.target.closest('[data-tag]');
     if (t) {
@@ -257,6 +266,7 @@ function bind() {
 
 async function start() {
   $('#brand-mark').innerHTML = mark();
+  $('#search-icon').innerHTML = icon.search(18);
   document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon[el.dataset.icon](16)));
   bind();
   renderNear();
