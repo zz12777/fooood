@@ -1,6 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
-import { mark } from './art.js';
+import { mark } from './art.js?v=20261109';
 import { toTrad, fixAddressOrder } from './text.js?v=20261109';
 import { suggestCats } from './categorize.js?v=20261109';
 import { parseListText } from './listparse.js?v=20261109';
