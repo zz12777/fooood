@@ -169,6 +169,18 @@ const CATS = {
   吃到飽: 'Buffet', 素食: 'Vegetarian', 早午餐店: 'Brunch',
 };
 
+// 地區名稱：用官方羅馬拼音，標籤上用短的寫法
+const AREAS = {
+  新竹市: 'Hsinchu City', 新竹縣: 'Hsinchu County', 其他縣市: 'Other cities', 其他: 'Other', 其他地區: 'Other areas',
+  新竹東區: 'Hsinchu East', 新竹北區: 'Hsinchu North', 新竹香山區: 'Xiangshan', 東區: 'Hsinchu East', 北區: 'Hsinchu North', 香山區: 'Xiangshan',
+  竹北市: 'Zhubei', 竹東鎮: 'Zhudong', 新埔鎮: 'Xinpu', 關西鎮: 'Guanxi', 湖口鄉: 'Hukou', 新豐鄉: 'Xinfeng',
+  芎林鄉: 'Qionglin', 橫山鄉: 'Hengshan', 北埔鄉: 'Beipu', 寶山鄉: 'Baoshan', 峨眉鄉: 'Emei', 五峰鄉: 'Wufeng', 尖石鄉: 'Jianshi',
+  台北: 'Taipei', 新北: 'New Taipei', 基隆: 'Keelung', 桃園: 'Taoyuan', 苗栗: 'Miaoli', 台中: 'Taichung', 彰化: 'Changhua',
+  南投: 'Nantou', 雲林: 'Yunlin', 嘉義: 'Chiayi', 台南: 'Tainan', 高雄: 'Kaohsiung', 屏東: 'Pingtung', 宜蘭: 'Yilan',
+  花蓮: 'Hualien', 台東: 'Taitung', 澎湖: 'Penghu', 金門: 'Kinmen', 連江: 'Matsu',
+};
+export const areaName = (name) => (lang === 'en' && AREAS[name]) || name;
+
 const WEEK_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const weekday = (d) => (lang === 'en' ? WEEK_EN[d] : `週${'日一二三四五六'[d]}`);
 

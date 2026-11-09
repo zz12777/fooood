@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js?v=20261109';
-import { t, catName, translateDom, mountLangToggle } from './i18n.js?v=20261109';
+import { t, catName, translateDom, mountLangToggle } from './i18n.js?v=20261109c';
 import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
 

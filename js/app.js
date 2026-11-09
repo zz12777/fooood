@@ -2,7 +2,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
-import { t, catName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261109';
+import { t, catName, areaName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261109c';
 import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js?v=20261109';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -218,7 +218,7 @@ function cardHtml(r, now, index = 0) {
     : '';
 
   const tags = [];
-  if (r.area) tags.push(`<span class="tag tag-area">${esc(r.area)}</span>`);
+  if (r.area) tags.push(`<span class="tag tag-area">${esc(areaName(r.area))}</span>`);
   r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(catName(c))}</span>`));
   if (!r.cats.length) tags.push(`<span class="tag tag-pending">${t('未分類')}</span>`);
   if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}${t('吃過')}</span>`);
@@ -290,8 +290,8 @@ function renderFilterChips() {
   $('#filter-areas').innerHTML = orderedCounties
     .map(
       ([county, list]) =>
-        `<div class="county"><span class="county-name">${esc(t(county))}</span><div class="chips">${list
-          .map((a) => chip('areas', a.name, t(a.name), areaCount.get(a.name)))
+        `<div class="county"><span class="county-name">${esc(areaName(county))}</span><div class="chips">${list
+          .map((a) => chip('areas', a.name, areaName(a.name), areaCount.get(a.name)))
           .join('')}</div></div>`
     )
     .join('');
