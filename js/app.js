@@ -221,7 +221,8 @@ function cardHtml(r, now, index = 0) {
   if (r.area) tags.push(`<span class="tag tag-area">${esc(areaName(r.area))}</span>`);
   r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(catName(c))}</span>`));
   if (!r.cats.length) tags.push(`<span class="tag tag-pending">${t('未分類')}</span>`);
-  if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}${t('吃過')}</span>`);
+  // 「吃過」是站主自己的紀錄，英文版不顯示
+  if (r.status === 'visited' && lang !== 'en') tags.push(`<span class="tag tag-visited">${icon.check(13)}${t('吃過')}</span>`);
 
   const mapHref =
     safeUrl(r.mapsUrl) ||
