@@ -2,7 +2,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
-import { t, catName, areaName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261109c';
+import { lang, t, catName, areaName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261109c';
 import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js?v=20261109';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -668,7 +668,8 @@ async function load() {
       state.draw.openOnly = false;
     }
     // 還沒有任何一間標記為吃過時，「排除吃過的」沒有作用，先不顯示
-    if (state.all.length && !state.all.some((r) => r.status === 'visited')) {
+    // 英文版不顯示（「吃過」是站主自己的紀錄，對外國訪客沒有意義）
+    if (lang === 'en' || (state.all.length && !state.all.some((r) => r.status === 'visited'))) {
       $('#opt-skip-visited').closest('label').hidden = true;
       state.draw.skipVisited = false;
     }
