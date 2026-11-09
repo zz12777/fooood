@@ -1,9 +1,9 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js';
-import { toTrad, fixAddressOrder } from './text.js';
-import { suggestCats } from './categorize.js';
-import { parseListText } from './listparse.js';
+import { toTrad, fixAddressOrder } from './text.js?v=20261109';
+import { suggestCats } from './categorize.js?v=20261109';
+import { parseListText } from './listparse.js?v=20261109';
 
 const $ = (sel) => document.querySelector(sel);
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);

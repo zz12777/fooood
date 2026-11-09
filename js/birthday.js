@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js';
-import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js';
-import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js';
+import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js?v=20261109';
+import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) =>
