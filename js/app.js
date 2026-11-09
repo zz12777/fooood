@@ -2,13 +2,14 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
 import { icon, bowl, mark } from './art.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
+import { t, catName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261109';
 import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js?v=20261109';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const DEMO = new URLSearchParams(location.search).has('demo');
 
-const PRICE_TEXT = { 1: '150 元以下', 2: '150 至 400 元', 3: '400 至 800 元', 4: '800 元以上' };
-const PLATFORM = { instagram: 'Instagram', threads: 'Threads', google: 'Google', other: '參考連結' };
+const PRICE_TEXT = { 1: t('150 元以下'), 2: t('150 至 400 元'), 3: t('400 至 800 元'), 4: t('800 元以上') };
+const PLATFORM = { instagram: 'Instagram', threads: 'Threads', google: 'Google', other: t('參考連結') };
 
 const state = {
   all: [],
@@ -81,7 +82,6 @@ function isOpenNow(hours, now) {
   return false;
 }
 
-const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六'];
 const pad2 = (n) => String(n).padStart(2, '0');
 
 // 營業時間篩選要看的時間點（一週中的第幾分鐘）；沒有設定就回傳 null
@@ -95,13 +95,16 @@ function whenMinute() {
   return day * 1440 + w.hour * 60;
 }
 
+// 「今天（週一）」或英文的「Today (Mon)」
+const dayName = (word, d) => (/[A-Za-z]/.test(t(word)) ? `${t(word)} (${weekday(d)})` : `${word}（${weekday(d)}）`);
+
 function whenLabel(short = false) {
   const w = state.when;
-  if (w.how === 'now') return '現在';
+  if (w.how === 'now') return t('現在');
   const today = Math.floor(taipeiMinuteOfWeek() / 1440);
   const name =
-    w.day === 't0' ? `今天（週${WEEKDAY[today]}）` : w.day === 't1' ? `明天（週${WEEKDAY[(today + 1) % 7]}）` : `週${WEEKDAY[Number(w.day.slice(1))]}`;
-  return short ? `${name.replace(/（.*?）/, '')} ${pad2(w.hour)}:00` : `${name}${pad2(w.hour)}:00`;
+    w.day === 't0' ? dayName('今天', today) : w.day === 't1' ? dayName('明天', (today + 1) % 7) : weekday(Number(w.day.slice(1)));
+  return short ? `${name.replace(/\s?[（(].*?[）)]/, '')} ${pad2(w.hour)}:00` : `${name}${/[A-Za-z)]$/.test(name) ? ' ' : ''}${pad2(w.hour)}:00`;
 }
 
 /* ---------- 資料載入 ---------- */
@@ -110,7 +113,7 @@ async function rest(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: { apikey: SUPABASE_KEY, Accept: 'application/json' },
   });
-  if (!res.ok) throw new Error(`資料庫回應 ${res.status}`);
+  if (!res.ok) throw new Error(t('資料庫回應 {s}', { s: res.status }));
   return res.json();
 }
 
@@ -205,20 +208,20 @@ function cardHtml(r, now, index = 0) {
   const at = state.when.active && state.when.how === 'at';
   const open = isOpenNow(r.hours, at ? whenMinute() : now);
   const openTag = at && open
-    ? `<span class="open is-open">${icon.clock(14)}${esc(whenLabel(true))} 有開</span>`
+    ? `<span class="open is-open">${icon.clock(14)}${esc(t('{when} 有開', { when: whenLabel(true) }))}</span>`
     : open === null
       ? ''
-      : `<span class="open ${open ? 'is-open' : 'is-closed'}">${icon.clock(14)}${open ? '營業中' : '休息中'}</span>`;
+      : `<span class="open ${open ? 'is-open' : 'is-closed'}">${icon.clock(14)}${open ? t('營業中') : t('休息中')}</span>`;
 
   const price = r.price
-    ? `<span class="price" aria-label="人均 ${PRICE_TEXT[r.price]}" title="人均 ${PRICE_TEXT[r.price]}"><span class="on">${'$'.repeat(r.price)}</span><span class="off">${'$'.repeat(4 - r.price)}</span></span>`
+    ? `<span class="price" aria-label="${esc(t('人均 {p}', { p: PRICE_TEXT[r.price] }))}" title="${esc(t('人均 {p}', { p: PRICE_TEXT[r.price] }))}"><span class="on">${'$'.repeat(r.price)}</span><span class="off">${'$'.repeat(4 - r.price)}</span></span>`
     : '';
 
   const tags = [];
   if (r.area) tags.push(`<span class="tag tag-area">${esc(r.area)}</span>`);
-  r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(c)}</span>`));
-  if (!r.cats.length) tags.push('<span class="tag tag-pending">未分類</span>');
-  if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}吃過</span>`);
+  r.cats.forEach((c) => tags.push(`<span class="tag tag-cat">${esc(catName(c))}</span>`));
+  if (!r.cats.length) tags.push(`<span class="tag tag-pending">${t('未分類')}</span>`);
+  if (r.status === 'visited') tags.push(`<span class="tag tag-visited">${icon.check(13)}${t('吃過')}</span>`);
 
   const mapHref =
     safeUrl(r.mapsUrl) ||
@@ -243,7 +246,7 @@ function cardHtml(r, now, index = 0) {
     ${r.note ? `<p class="note">${linkify(r.note)}</p>` : ''}
     <div class="card-foot">
       <a class="link link-map" href="${esc(mapHref)}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}Google Map</a>
-      ${state.near.origin && r.nearMin != null ? `<a class="link link-route" href="${esc(routeUrl(state.near.origin, r, state.near.mode))}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}路線</a>` : ''}
+      ${state.near.origin && r.nearMin != null ? `<a class="link link-route" href="${esc(routeUrl(state.near.origin, r, state.near.mode))}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}${t('路線')}</a>` : ''}
       ${refs}
       ${openTag}
     </div>
@@ -287,8 +290,8 @@ function renderFilterChips() {
   $('#filter-areas').innerHTML = orderedCounties
     .map(
       ([county, list]) =>
-        `<div class="county"><span class="county-name">${esc(county)}</span><div class="chips">${list
-          .map((a) => chip('areas', a.name, a.name, areaCount.get(a.name)))
+        `<div class="county"><span class="county-name">${esc(t(county))}</span><div class="chips">${list
+          .map((a) => chip('areas', a.name, t(a.name), areaCount.get(a.name)))
           .join('')}</div></div>`
     )
     .join('');
@@ -301,8 +304,8 @@ function renderFilterChips() {
   $('#filter-cats').innerHTML = groupCats(state.cats.filter((c) => catCount.get(c.name)))
     .map(
       ([group, list]) =>
-        `<div class="county"><span class="county-name">${esc(group)}</span><div class="chips">${list
-          .map((c) => chip('cats', c.name, c.name, catCount.get(c.name)))
+        `<div class="county"><span class="county-name">${esc(t(group))}</span><div class="chips">${list
+          .map((c) => chip('cats', c.name, catName(c.name), catCount.get(c.name)))
           .join('')}</div></div>`
     )
     .join('');
@@ -315,11 +318,17 @@ function renderNear() {
   $('#near-input').hidden = n.how !== 'street';
   $('#near-here').hidden = n.how !== 'gps';
   $('#near-mode').innerHTML = Object.entries(MODES)
-    .map(([k, m]) => `<option value="${k}"${n.mode === k ? ' selected' : ''}>${m.label}</option>`)
+    .map(([k, m]) => `<option value="${k}"${n.mode === k ? ' selected' : ''}>${t(m.label)}</option>`)
     .join('');
   $('#near-min').innerHTML = MINUTE_OPTIONS.map((m) => `<option value="${m}"${n.minutes === m ? ' selected' : ''}>${m}</option>`).join('');
   const st = $('#near-status');
-  st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `已篩選：離「${n.label}」${MODES[n.mode].label} ${n.minutes} 分鐘內的店家，由近到遠排` : '');
+  st.textContent = n.busy
+    ? t('查詢中')
+    : n.msg
+      ? t(n.msg)
+      : n.origin
+        ? t('已篩選：離「{label}」{mode} {min} 分鐘內的店家，由近到遠排', { label: t(n.label), mode: t(MODES[n.mode].label), min: n.minutes })
+        : '';
   st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
   $('#near-choices').innerHTML = n.choices
     .map((c, i) => `<button type="button" class="chip chip-near" data-near-pick="${i}"><span>${esc(c.label)}</span></button>`)
@@ -334,9 +343,9 @@ function renderWhen() {
   $('#when-form').hidden = w.how !== 'at';
   const today = Math.floor(taipeiMinuteOfWeek() / 1440);
   const days = [
-    ['t0', `今天（週${WEEKDAY[today]}）`],
-    ['t1', `明天（週${WEEKDAY[(today + 1) % 7]}）`],
-    ...[1, 2, 3, 4, 5, 6, 0].map((d) => [`w${d}`, `週${WEEKDAY[d]}`]),
+    ['t0', dayName('今天', today)],
+    ['t1', dayName('明天', (today + 1) % 7)],
+    ...[1, 2, 3, 4, 5, 6, 0].map((d) => [`w${d}`, weekday(d)]),
   ];
   $('#when-day').innerHTML = days.map(([v, l]) => `<option value="${v}"${w.day === v ? ' selected' : ''}>${l}</option>`).join('');
   $('#when-hour').innerHTML = Array.from({ length: 12 }, (_, i) => i * 2)
@@ -344,12 +353,12 @@ function renderWhen() {
     .join('');
   const st = $('#when-status');
   if (w.active) {
-    st.textContent = w.how === 'now' ? '已篩選：現在營業中的店家' : `已篩選：${whenLabel()} 有開的店家`;
+    st.textContent = w.how === 'now' ? t('已篩選：現在營業中的店家') : t('已篩選：{when} 有開的店家', { when: whenLabel() });
   } else st.textContent = '';
   $('#when-cancel').hidden = !w.how;
   $('#when-note').hidden = !w.how;
   // 抽籤區的開關跟著篩選走：有設定營業時間就自動打開，並寫出是哪個時間
-  $('#opt-open-text').textContent = w.active && w.how === 'at' ? `只抽${whenLabel(true)} 有開的店` : '只抽營業中的店';
+  $('#opt-open-text').textContent = w.active && w.how === 'at' ? t('只抽{when} 有開的店', { when: whenLabel(true) }) : t('只抽營業中的店');
 }
 
 function setWhen(active) {
@@ -409,7 +418,7 @@ function syncChipState() {
   const n = activeFilterCount();
   const badge = $('#filter-badge');
   badge.hidden = n === 0;
-  badge.textContent = `${n} 項`;
+  badge.textContent = t('{n} 項', { n });
   $('#clear-filters').hidden = n === 0;
 }
 
@@ -420,18 +429,18 @@ function renderList() {
   const now = taipeiMinuteOfWeek();
   const list = filtered();
   $('#list-count').textContent =
-    state.all.length === 0 ? '' : activeFilterCount() ? `符合 ${list.length} 間，共 ${state.all.length} 間` : `共 ${state.all.length} 間`;
+    state.all.length === 0 ? '' : activeFilterCount() ? t('符合 {m} 間，共 {n} 間', { m: list.length, n: state.all.length }) : t('共 {n} 間', { n: state.all.length });
 
   if (state.all.length === 0) {
-    el.innerHTML = stateBlock(bowl({ soup: false, label: '空空的碗' }), '還沒有餐廳', '匯入 Google 地圖的收藏後，這裡就會長出一整份清單。');
+    el.innerHTML = stateBlock(bowl({ soup: false, label: t('空空的碗') }), t('還沒有餐廳'), t('匯入 Google 地圖的收藏後，這裡就會長出一整份清單。'));
     return;
   }
   if (list.length === 0) {
     el.innerHTML = stateBlock(
-      bowl({ soup: false, label: '空空的碗' }),
-      '沒有符合的店',
-      '換個條件看看，或把篩選清掉。',
-      '<button type="button" class="btn-secondary" data-action="clear">清除所有篩選</button>'
+      bowl({ soup: false, label: t('空空的碗') }),
+      t('沒有符合的店'),
+      t('換個條件看看，或把篩選清掉。'),
+      `<button type="button" class="btn-secondary" data-action="clear">${t('清除所有篩選')}</button>`
     );
     return;
   }
@@ -467,16 +476,16 @@ function updateDrawHint() {
   const hint = $('#draw-hint');
   const btn = $('#draw-btn');
   if (state.all.length === 0) {
-    hint.textContent = '資料載入後，就能從符合條件的店裡抽。';
+    hint.textContent = t('資料載入後，就能從符合條件的店裡抽。');
     btn.disabled = true;
     return;
   }
   hint.textContent =
     list.length === 0
-      ? '目前沒有符合條件的店，放寬篩選或關掉開關再試試。'
+      ? t('目前沒有符合條件的店，放寬篩選或關掉開關再試試。')
       : state.draw.drawn
         ? ''
-        : '若想縮小範圍，可先在下方選擇地區、價位或類別。';
+        : t('若想縮小範圍，可先在下方選擇地區、價位或類別。');
   btn.disabled = list.length === 0;
 }
 
@@ -501,11 +510,11 @@ function doDraw() {
   void out.offsetWidth; // 重新觸發進場動畫
   out.classList.add('is-fresh');
 
-  const parts = [`從符合條件的店裡抽出 ${picked.length} 間。`];
+  const parts = [t('從符合條件的店裡抽出 {n} 間。', { n: picked.length })];
   note.textContent = parts.join('');
 
   state.draw.drawn = true;
-  $('#draw-label').textContent = '再抽一次';
+  $('#draw-label').textContent = t('再抽一次');
   updateDrawHint();
 }
 
@@ -632,20 +641,22 @@ function clearFilters() {
 /* ---------- 啟動 ---------- */
 
 function setupStatic() {
+  translateDom();
+  mountLangToggle($('#lang-toggle'));
   $('#brand-mark').innerHTML = mark();
   document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon[el.dataset.icon](16)));
   renderNear();
   renderWhen();
   $('#draw-art').innerHTML = bowl();
   $('#search-icon').innerHTML = icon.search(18);
-  $('#filters-label').innerHTML = `${icon.sliders(18)}<span>篩選地區、價位、類別</span>`;
-  $('#draw-btn').innerHTML = `${icon.dice(20)}<span id="draw-label">抽三間幸運店家</span>`;
+  $('#filters-label').innerHTML = `${icon.sliders(18)}<span>${t('篩選地區、價位、類別')}</span>`;
+  $('#draw-btn').innerHTML = `${icon.dice(20)}<span id="draw-label">${t('抽三間幸運店家')}</span>`;
   // 桌面寬度預設展開篩選區
   if (window.matchMedia('(min-width: 900px)').matches) $('#filters').open = true;
 }
 
 async function load() {
-  $('#list').innerHTML = stateBlock(bowl({ label: '翻找菜單中' }), '翻找菜單中', '稍等一下。');
+  $('#list').innerHTML = stateBlock(bowl({ label: t('翻找菜單中') }), t('翻找菜單中'), t('稍等一下。'));
   try {
     const data = await loadData();
     state.all = data.restaurants;
@@ -666,10 +677,10 @@ async function load() {
   } catch (err) {
     console.error(err);
     $('#list').innerHTML = stateBlock(
-      bowl({ soup: false, label: '空空的碗' }),
-      '連不上資料庫',
-      '可能是網路不穩，或資料庫暫停了。稍後再試一次。',
-      '<button type="button" class="btn-secondary" id="retry">再試一次</button>'
+      bowl({ soup: false, label: t('空空的碗') }),
+      t('連不上資料庫'),
+      t('可能是網路不穩，或資料庫暫停了。稍後再試一次。'),
+      `<button type="button" class="btn-secondary" id="retry">${t('再試一次')}</button>`
     );
     $('#retry').addEventListener('click', load, { once: true });
   }

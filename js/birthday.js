@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js?v=20261109';
+import { t, catName, translateDom, mountLangToggle } from './i18n.js?v=20261109';
 import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
 
@@ -33,7 +34,7 @@ async function load() {
       ? 'birthday_brands?select=id,brand,keyword,offer,tags,note,source,branches:birthday_branches(id,name,address,lat,lng,maps_url)&order=brand'
       : 'birthday_brands?select=id,brand,keyword,offer,tags,note,source&order=brand';
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: SUPABASE_KEY, Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`資料庫回應 ${res.status}`);
+  if (!res.ok) throw new Error(t('資料庫回應 {s}', { s: res.status }));
   const rows = await res.json();
   return rows.map((b) => ({
     ...b,
@@ -66,13 +67,13 @@ function nearbyBranches() {
 /* ---------- 畫面 ---------- */
 
 function tagsHtml(b) {
-  return b.tags.map((t) => `<span class="tag tag-cat">${esc(t)}</span>`).join('');
+  return b.tags.map((x) => `<span class="tag tag-cat">${esc(catName(x))}</span>`).join('');
 }
 
 function extraHtml(b) {
   const parts = [];
   if (b.note) parts.push(`<p class="note">${linkify(b.note)}</p>`);
-  if (b.source) parts.push(`<p class="addr">來源：${linkify(b.source)}</p>`);
+  if (b.source) parts.push(`<p class="addr">${t('來源：')}${linkify(b.source)}</p>`);
   return parts.join('');
 }
 
@@ -108,7 +109,7 @@ function brandCard(b, i) {
     <p class="bday-offer">${esc(b.offer)}</p>
     ${extraHtml(b)}
     <div class="card-foot">
-      <a class="link link-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}在 Google Map 找分店</a>
+      <a class="link link-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}${t('在 Google Map 找分店')}</a>
     </div>
   </article>`;
 }
@@ -124,7 +125,7 @@ function branchCard(br, i) {
     ${br.address ? `<p class="addr">${esc(cleanAddress(br.address))}</p>` : ''}
     <div class="card-foot">
       ${mapLink(br)}
-      <a class="link link-route" href="${esc(routeUrl(state.near.origin, br, state.near.mode))}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}路線</a>
+      <a class="link link-route" href="${esc(routeUrl(state.near.origin, br, state.near.mode))}" target="_blank" rel="noopener noreferrer">${icon.pin(16)}${t('路線')}</a>
     </div>
   </article>`;
 }
@@ -136,7 +137,7 @@ function renderTags() {
     .sort((a, b) => b[1] - a[1])
     .map(
       ([t, n]) =>
-        `<button type="button" class="chip" aria-pressed="${state.tags.has(t)}" data-tag="${esc(t)}">${icon.check(14)}<span>${esc(t)}</span><span class="n">${n}</span></button>`
+        `<button type="button" class="chip" aria-pressed="${state.tags.has(t)}" data-tag="${esc(t)}">${icon.check(14)}<span>${esc(catName(t))}</span><span class="n">${n}</span></button>`
     )
     .join('');
 }
@@ -144,22 +145,22 @@ function renderTags() {
 function renderList() {
   const el = $('#list');
   if (!state.brands.length) {
-    el.innerHTML = '<div class="state"><h3>還沒有壽星優惠</h3><p>整理好之後就會出現在這裡。</p></div>';
+    el.innerHTML = `<div class="state"><h3>${t('還沒有壽星優惠')}</h3><p>${t('整理好之後就會出現在這裡。')}</p></div>`;
     return;
   }
   if (NEAR_ENABLED && state.near.origin) {
     const list = nearbyBranches();
-    $('#list-title').textContent = '附近的壽星優惠';
+    $('#list-title').textContent = t('附近的壽星優惠');
     el.innerHTML = list.length
       ? `<div class="grid">${list.map(branchCard).join('')}</div>`
-      : '<div class="state"><h3>附近沒有符合的分店</h3><p>把分鐘數調大，或換個交通方式試試。</p></div>';
+      : `<div class="state"><h3>${t('附近沒有符合的分店')}</h3><p>${t('把分鐘數調大，或換個交通方式試試。')}</p></div>`;
     return;
   }
-  $('#list-title').textContent = '優惠清單';
+  $('#list-title').textContent = t('優惠清單');
   const list = state.brands.filter(brandMatches);
   el.innerHTML = list.length
     ? `<div class="grid">${list.map(brandCard).join('')}</div>`
-    : '<div class="state"><h3>沒有符合的優惠</h3><p>換個類別或關鍵字看看。</p></div>';
+    : `<div class="state"><h3>${t('沒有符合的優惠')}</h3><p>${t('換個類別或關鍵字看看。')}</p></div>`;
 }
 
 function renderNear() {
@@ -170,11 +171,17 @@ function renderNear() {
   $('#near-input').hidden = n.how !== 'street';
   $('#near-here').hidden = n.how !== 'gps';
   $('#near-mode').innerHTML = Object.entries(MODES)
-    .map(([k, m]) => `<option value="${k}"${n.mode === k ? ' selected' : ''}>${m.label}</option>`)
+    .map(([k, m]) => `<option value="${k}"${n.mode === k ? ' selected' : ''}>${t(m.label)}</option>`)
     .join('');
   $('#near-min').innerHTML = MINUTE_OPTIONS.map((m) => `<option value="${m}"${n.minutes === m ? ' selected' : ''}>${m}</option>`).join('');
   const st = $('#near-status');
-  st.textContent = n.busy ? '查詢中' : n.msg || (n.origin ? `已篩選：離「${n.label}」${MODES[n.mode].label} ${n.minutes} 分鐘內的分店，由近到遠排` : '');
+  st.textContent = n.busy
+    ? t('查詢中')
+    : n.msg
+      ? t(n.msg)
+      : n.origin
+        ? t('已篩選：離「{label}」{mode} {min} 分鐘內的分店，由近到遠排', { label: t(n.label), mode: t(MODES[n.mode].label), min: n.minutes })
+        : '';
   st.className = `near-status ${n.msg && !n.busy ? 'is-error' : ''}`.trim();
   $('#near-choices').innerHTML = n.choices
     .map((c, i) => `<button type="button" class="chip chip-near" data-near-pick="${i}"><span>${esc(c.label)}</span></button>`)
@@ -265,17 +272,19 @@ function bind() {
 }
 
 async function start() {
+  translateDom();
+  mountLangToggle($('#lang-toggle'));
   $('#brand-mark').innerHTML = mark();
   $('#search-icon').innerHTML = icon.search(18);
   document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon[el.dataset.icon](16)));
   bind();
   renderNear();
-  $('#list').innerHTML = '<div class="state"><h3>載入中</h3><p>稍等一下。</p></div>';
+  $('#list').innerHTML = `<div class="state"><h3>${t('載入中')}</h3><p>${t('稍等一下。')}</p></div>`;
   try {
     state.brands = await load();
     refresh();
   } catch (e) {
-    $('#list').innerHTML = `<div class="state"><h3>暫時讀不到資料</h3><p>${esc(e.message)}</p></div>`;
+    $('#list').innerHTML = `<div class="state"><h3>${t('暫時讀不到資料')}</h3><p>${esc(e.message)}</p></div>`;
   }
 }
 

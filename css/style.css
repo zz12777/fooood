@@ -996,3 +996,25 @@ main {
   display: grid;
   gap: 8px;
 }
+
+.top-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.lang-toggle {
+  min-height: 36px;
+  min-width: 52px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.lang-toggle:hover {
+  background: var(--green-soft);
+}
