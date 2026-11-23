@@ -210,6 +210,7 @@ const EN = {
   '換一組': 'Shuffle',
   '優惠以店家公告為準。': 'Deals follow each brand\'s announcement.',
   '目前沒有分店：{list}': 'No branches in: {list}',
+  '分店：{list}': 'Branches in: {list}',
   '下載圖片': 'Download image',
   '優惠以店家公告為準': 'Deals follow each brand\'s announcement',
   '新竹吃什麼 壽星優惠': 'Hsinchu Eats birthday deals',

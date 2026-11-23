@@ -61,6 +61,8 @@ export function buildPlan(brands, answers, rnd = Math.random) {
     if (r && short && r !== short) return false;
     if (!answers.member && needsMember(b)) return false;
     if ((b.no_counties || []).includes(answers.county)) return false;
+    // 有填「有分店的縣市」時，只推薦給選了這些縣市的人
+    if ((b.counties || []).length && !b.counties.includes(answers.county)) return false;
     return true;
   });
   const used = new Set();

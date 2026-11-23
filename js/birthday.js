@@ -1,9 +1,9 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js?v=20261123b';
-import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123c';
+import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123d';
 import { WHEN_LABEL, whenOf } from './bdaytime.js?v=20261123';
 import { downloadPlan } from './planimage.js?v=20261123';
-import { COUNTIES, FOODS, buildPlan } from './bdayquiz.js?v=20261123';
+import { COUNTIES, FOODS, buildPlan } from './bdayquiz.js?v=20261123b';
 import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
 
@@ -81,6 +81,8 @@ function whenTag(b) {
 function extraHtml(b) {
   const parts = [];
   if (b.note) parts.push(`<p class="note">${linkify(b.note)}</p>`);
+  if (b.counties && b.counties.length)
+    parts.push(`<p class="addr">${esc(t('分店：{list}', { list: b.counties.map(areaName).join(lang === 'en' ? ', ' : '、') }))}</p>`);
   if (b.no_counties && b.no_counties.length)
     parts.push(`<p class="addr">${esc(t('目前沒有分店：{list}', { list: b.no_counties.map(areaName).join(lang === 'en' ? ', ' : '、') }))}</p>`);
   if (b.source) parts.push(`<p class="addr">${t('來源：')}${linkify(b.source)}</p>`);
