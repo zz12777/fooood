@@ -1044,6 +1044,33 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+/* 進度：五個圈圈，答完一題亮一個 */
+.quiz-dots {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.quiz-dot {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: #fff;
+  transition: background 0.25s, transform 0.25s;
+}
+.quiz-dot.is-now {
+  border-width: 2.5px;
+}
+.quiz-dot.is-done {
+  background: var(--yellow);
+  box-shadow: 0 0 0 3px var(--yellow-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-dot {
+    transition: none;
+  }
 }
 .quiz-progress {
   color: var(--ink-soft);

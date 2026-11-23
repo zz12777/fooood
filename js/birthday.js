@@ -323,7 +323,8 @@ function renderQuiz() {
       ${optBtn('member', 'yes', t('可以'), a.member === true)}
       ${optBtn('member', 'no', t('不想，只要不用加會員的'), a.member === false)}</div>`;
   }
-  el.innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('幫我排生日行程')}　${quiz.step + 1} / ${STEPS.length}</span>
+  el.innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('幫我排生日行程')}<span class="sr">　${quiz.step + 1} / ${STEPS.length}</span></span>
+      <span class="quiz-dots" aria-hidden="true">${STEPS.map((_, i) => `<span class="quiz-dot${i < quiz.step ? ' is-done' : i === quiz.step ? ' is-now' : ''}"></span>`).join('')}</span>
       <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
     ${body}
     ${quiz.step ? `<button type="button" class="btn-text quiz-back" data-quiz="back">${t('上一題')}</button>` : ''}`;
@@ -351,6 +352,7 @@ function renderResult() {
         .join('')
     : `<li class="near-note">${t('沒有找到符合的優惠，換個選項再試試。')}</li>`;
   $('#quiz').innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('你的生日行程')}</span>
+      <span class="quiz-dots" aria-hidden="true">${STEPS.map(() => '<span class="quiz-dot is-done"></span>').join('')}</span>
       <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
     <h3 class="quiz-title">${esc(t('你是「{title}」', { title: t(r.title) }))}</h3>
     <p class="near-note">${esc(sub)}</p>
