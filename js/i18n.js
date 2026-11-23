@@ -214,8 +214,8 @@ const EN = {
   '新竹吃什麼 壽星優惠': 'Hsinchu Eats birthday deals',
   '複製行程': 'Copy plan',
   '重新測驗': 'Start over',
-  '已複製，可以貼給朋友。': 'Copied. Share it with friends.',
-  '這個瀏覽器不能自動複製。': 'This browser cannot copy automatically.',
+  '已複製': 'Copied',
+  '無法複製': 'Cannot copy',
 };
 
 // 類別名稱

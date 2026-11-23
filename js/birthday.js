@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js?v=20261123';
-import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123';
+import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123b';
 import { WHEN_LABEL, whenOf } from './bdaytime.js?v=20261123';
 import { downloadPlan } from './planimage.js?v=20261123';
 import { COUNTIES, FOODS, buildPlan } from './bdayquiz.js?v=20261123';
@@ -361,10 +361,10 @@ function renderResult() {
     <div class="row actions">
       <button type="button" class="btn-primary" data-quiz="again">${t('換一組')}</button>
       <button type="button" class="btn-secondary" data-quiz="image">${t('下載圖片')}</button>
-      <button type="button" class="btn-secondary" data-quiz="copy">${t('複製行程')}</button>
+      <button type="button" class="btn-secondary" data-quiz="copy" aria-live="polite">${t('複製行程')}</button>
       <button type="button" class="btn-text" data-quiz="restart">${t('重新測驗')}</button>
     </div>
-    <p class="near-note" id="quiz-copied" aria-live="polite"></p>`;
+`;
 }
 
 function planImageData() {
@@ -444,12 +444,18 @@ function bindQuiz() {
     } else if (act === 'image') {
       if (quiz.result.plan.length) await downloadPlan(planImageData(), 'birthday-plan.png');
     } else if (act === 'copy') {
+      // 按下去暫時變成「已複製」，五秒後換回原本的字
+      const btn = e.target.closest('[data-quiz]');
       try {
         await navigator.clipboard.writeText(planText());
-        $('#quiz-copied').textContent = t('已複製，可以貼給朋友。');
+        btn.textContent = t('已複製');
       } catch {
-        $('#quiz-copied').textContent = t('這個瀏覽器不能自動複製。');
+        btn.textContent = t('無法複製');
       }
+      clearTimeout(btn._timer);
+      btn._timer = setTimeout(() => {
+        btn.textContent = t('複製行程');
+      }, 5000);
     }
   });
 }
