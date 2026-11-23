@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark } from './art.js?v=20261109';
 import { toTrad, fixAddressOrder } from './text.js?v=20261109';
 import { suggestCats } from './categorize.js?v=20261109';
+import { WHEN_TYPES, WHEN_LABEL, guessWhen } from './bdaytime.js?v=20261123';
 import { parseListText } from './listparse.js?v=20261109';
 
 const $ = (sel) => document.querySelector(sel);
@@ -622,7 +623,7 @@ async function loadBdayList() {
   const el = $('#bday-list');
   const { data, error } = await sb
     .from('birthday_brands')
-    .select('id,brand,offer,tags,note,source')
+    .select('*')
     .order('brand');
   if (error) {
     el.innerHTML = `<li class="muted">${/does not exist|schema cache/.test(error.message) ? '尚未啟用，請先執行 009_birthday.sql' : '讀取失敗'}</li>`;
@@ -661,6 +662,9 @@ function bdayEditHtml(b) {
       ${f('品牌', 'brand', b.brand)}
       ${f('優惠內容', 'offer', b.offer, true)}
       ${f('標籤（用逗號隔開）', 'tags', (b.tags || []).join(', '))}
+      <label class="field field-wide"><span>使用時間</span><select name="when_type">${WHEN_TYPES.map(
+        (w) => `<option value="${w}"${(b.when_type || guessWhen(b.offer, b.note)) === w ? ' selected' : ''}>${WHEN_LABEL[w]}</option>`
+      ).join('')}</select></label>
       ${f('備註', 'note', b.note || '', true)}
       ${f('來源（可以放多個網址，用空白隔開）', 'source', b.source || '')}
       <div class="row actions">
@@ -728,6 +732,7 @@ $('#bday-list').addEventListener('submit', async (e) => {
     tags: v('tags').split(/[,，、]/).map((t) => t.trim()).filter(Boolean),
     note: v('note') || null,
     source: v('source') || null,
+    when_type: v('when_type'),
     updated_at: new Date().toISOString(),
   };
   say(status, '儲存中');
@@ -793,6 +798,7 @@ async function addBdays() {
             note: it.note || null,
             source: it.source || null,
             keyword: it.keyword || null,
+            when_type: guessWhen(it.offer, it.note),
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'brand' }

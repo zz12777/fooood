@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261109">
+  <link rel="stylesheet" href="css/style.css?v=20261123">
 </head>
 <body>
   <header class="top">
@@ -32,7 +32,12 @@
     <section class="bday-intro">
       <h2>生日快到了嗎？</h2>
       <p class="near-note">優惠內容整理自網路分享，實際以各店家官方公告為準。</p>
+      <div class="row actions">
+        <button type="button" class="btn-primary" id="quiz-open">幫我排生日行程</button>
+      </div>
     </section>
+
+    <section class="quiz" id="quiz" hidden aria-live="polite"></section>
 
     <section class="bday-filter" id="filters" aria-labelledby="tags-title">
       <h3 id="tags-title" class="sr">依類別篩選</h3>
@@ -83,6 +88,6 @@
     <p>想推薦壽星優惠？<a class="foot-link" href="https://forms.gle/wVN1hy4eoFBXPs8R6" target="_blank" rel="noopener noreferrer">告訴我們</a></p>
   </footer>
 
-  <script type="module" src="js/birthday.js?v=20261109b"></script>
+  <script type="module" src="js/birthday.js?v=20261123"></script>
 </body>
 </html>

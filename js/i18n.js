@@ -155,6 +155,63 @@ const EN = {
   '把分鐘數調大，或換個交通方式試試。': 'Try more minutes or another way of getting there.',
   '載入中': 'Loading',
   '暫時讀不到資料': 'Cannot load data right now',
+  // 壽星優惠：使用時間與生日行程測驗
+  '限生日當天': 'Birthday only',
+  '當天另有優惠': 'Extra on the day',
+  '生日前後幾天': 'Around your birthday',
+  '生日當月': 'Birthday month',
+  '未註明時間': 'Timing not stated',
+  '幫我排生日行程': 'Plan my birthday',
+  '想在哪一天慶祝？': 'When do you want to celebrate?',
+  '生日當天': 'On my birthday',
+  '生日月的其他天': 'Another day in my birthday month',
+  '在哪個縣市？': 'Which city or county?',
+  '縣市': 'City or county',
+  '下一題': 'Next',
+  '都可以，下一題': 'Anything works, next',
+  '跟誰一起？': 'Who is coming?',
+  '自己一個人': 'Just me',
+  '兩個人': 'Two of us',
+  '三到四個人': 'Three or four',
+  '五人以上': 'Five or more',
+  '喜歡吃什麼？可以多選': 'What do you like? Pick any',
+  '燒肉': 'Yakiniku',
+  '韓式、泰式': 'Korean, Thai',
+  '西式、義式': 'Western, Italian',
+  '甜點': 'Desserts',
+  '飲料、咖啡': 'Drinks, coffee',
+  '願意先加會員或下載 APP 嗎？': 'Happy to join a membership or download an app?',
+  '很多生日禮要先成為會員才拿得到。': 'Many birthday gifts are for members only.',
+  '可以': 'Sure',
+  '不想，只要不用加會員的': 'No, only deals without signing up',
+  '關閉': 'Close',
+  '上一題': 'Back',
+  '你的生日行程': 'Your birthday plan',
+  '你是「{title}」': 'You are a {title}',
+  '燒肉派壽星': 'yakiniku birthday lover',
+  '火鍋派壽星': 'hot pot birthday lover',
+  '和風壽星': 'Japanese food birthday lover',
+  '牛排派壽星': 'steak birthday lover',
+  '吃到飽派壽星': 'buffet birthday lover',
+  '異國探險壽星': 'world food birthday explorer',
+  '洋食派壽星': 'Western food birthday lover',
+  '甜點系壽星': 'sweet tooth birthday star',
+  '手搖控壽星': 'bubble tea birthday star',
+  '什麼都想吃的壽星': 'birthday star who wants it all',
+  '早上': 'Morning',
+  '中午': 'Lunch',
+  '下午': 'Afternoon',
+  '晚上': 'Dinner',
+  '生日當天限定': 'Birthday only deal',
+  '{n} 人以上同行適用': 'For groups of {n}+',
+  '在 Google Map 找{county}的分店': 'Find branches in {county} on Google Maps',
+  '沒有找到符合的優惠，換個選項再試試。': 'No matching deals. Try other answers.',
+  '分店不一定在你附近，出發前請先查好。優惠以店家公告為準。': 'Branches may not be near you, so check before going. Deals follow each brand\'s announcement.',
+  '換一組': 'Shuffle',
+  '複製行程': 'Copy plan',
+  '重新測驗': 'Start over',
+  '已複製，可以貼給朋友。': 'Copied. Share it with friends.',
+  '這個瀏覽器不能自動複製。': 'This browser cannot copy automatically.',
 };
 
 // 類別名稱
@@ -179,7 +236,13 @@ const AREAS = {
   南投: 'Nantou', 雲林: 'Yunlin', 嘉義: 'Chiayi', 台南: 'Tainan', 高雄: 'Kaohsiung', 屏東: 'Pingtung', 宜蘭: 'Yilan',
   花蓮: 'Hualien', 台東: 'Taitung', 澎湖: 'Penghu', 金門: 'Kinmen', 連江: 'Matsu',
 };
-export const areaName = (name) => (lang === 'en' && AREAS[name]) || name;
+export function areaName(name) {
+  if (lang !== 'en') return name;
+  if (AREAS[name]) return AREAS[name];
+  const short = String(name).replace(/[市縣]$/, '');
+  if (short !== name && AREAS[short]) return `${AREAS[short]} ${name.endsWith('縣') ? 'County' : 'City'}`;
+  return name;
+}
 
 const WEEK_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const weekday = (d) => (lang === 'en' ? WEEK_EN[d] : `週${'日一二三四五六'[d]}`);

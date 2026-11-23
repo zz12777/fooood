@@ -1018,3 +1018,105 @@ main {
 .lang-toggle:hover {
   background: var(--green-soft);
 }
+
+/* ---------- 生日行程測驗 ---------- */
+.quiz {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+}
+.quiz[hidden] {
+  display: none;
+}
+.quiz h3 {
+  font-size: 1.25rem;
+}
+.quiz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.quiz-progress {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+.quiz-opts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.quiz-opt {
+  min-height: 48px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.quiz-opt:hover {
+  background: var(--paper-2);
+}
+.quiz-opt[aria-pressed='true'] {
+  background: var(--green);
+}
+.quiz-select {
+  min-height: 44px;
+  max-width: 260px;
+  padding: 0 10px;
+  font: inherit;
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+}
+.quiz-back {
+  justify-self: start;
+}
+.quiz-title {
+  font-size: 1.375rem;
+}
+.quiz-plan {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.quiz-stop {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.quiz-time {
+  font-weight: 700;
+  color: var(--blue-deep);
+}
+.quiz-stop-body {
+  display: grid;
+  gap: 8px;
+}
+.quiz-stop-body h4 {
+  font-size: 1.125rem;
+}
+.tag-when {
+  background: var(--yellow-soft);
+}
+.tag-when-day,
+.tag-when-day_month {
+  background: var(--yellow);
+}
+.tag-reason {
+  background: var(--paper-2);
+}
+@media (max-width: 480px) {
+  .quiz-stop {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
