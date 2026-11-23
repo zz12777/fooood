@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
-import { mark, icon } from './art.js?v=20261109';
+import { mark, icon } from './art.js?v=20261123';
 import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123';
 import { WHEN_LABEL, whenOf } from './bdaytime.js?v=20261123';
 import { downloadPlan } from './planimage.js?v=20261123';
@@ -307,7 +307,7 @@ function renderQuiz() {
       <select id="quiz-county" class="quiz-select">${COUNTIES.map(
         (c) => `<option value="${c}"${a.county === c ? ' selected' : ''}>${esc(areaName(c))}</option>`
       ).join('')}</select>
-      <div class="quiz-nav-inline"><button type="button" class="btn-primary" data-quiz="next">${t('下一題')}</button></div>`;
+      <div class="quiz-nav-inline"><button type="button" class="btn-primary quiz-next" data-quiz="next">${t('下一題')}${icon.arrowRight(18)}</button></div>`;
   } else if (key === 'party') {
     body = `<h3>${t('跟誰一起？')}</h3><div class="quiz-opts">
       ${optBtn('party', 1, t('自己一個人'), a.party === 1)}
@@ -317,7 +317,7 @@ function renderQuiz() {
   } else if (key === 'foods') {
     body = `<h3>${t('喜歡吃什麼？可以多選')}</h3><div class="quiz-opts">
       ${FOODS.map((f) => optBtn('foods', f.id, t(f.label), a.foods.includes(f.id))).join('')}</div>
-      <div class="quiz-nav-inline"><button type="button" class="btn-primary" data-quiz="next">${a.foods.length ? t('下一題') : t('都可以，下一題')}</button></div>`;
+      <div class="quiz-nav-inline"><button type="button" class="btn-primary quiz-next" data-quiz="next">${a.foods.length ? t('下一題') : t('都可以，下一題')}${icon.arrowRight(18)}</button></div>`;
   } else if (key === 'member') {
     body = `<h3>${t('願意先加會員或下載 APP 嗎？')}</h3><p class="near-note">${t('很多生日禮要先成為會員才拿得到。')}</p><div class="quiz-opts">
       ${optBtn('member', 'yes', t('可以'), a.member === true)}
@@ -325,9 +325,9 @@ function renderQuiz() {
   }
   el.innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('幫我排生日行程')}<span class="sr">　${quiz.step + 1} / ${STEPS.length}</span></span>
       <span class="quiz-dots" aria-hidden="true">${STEPS.map((_, i) => `<span class="quiz-dot${i < quiz.step ? ' is-done' : i === quiz.step ? ' is-now' : ''}"></span>`).join('')}</span>
-      <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
+      <button type="button" class="quiz-close" data-quiz="close" aria-label="${t('關閉')}">${icon.close(20)}</button></div>
     ${body}
-    ${quiz.step ? `<button type="button" class="btn-text quiz-back" data-quiz="back">${t('上一題')}</button>` : ''}`;
+    ${quiz.step ? `<button type="button" class="btn-text quiz-back" data-quiz="back">${icon.arrowLeft(18)}${t('上一題')}</button>` : ''}`;
 }
 
 function renderResult() {
@@ -353,7 +353,7 @@ function renderResult() {
     : `<li class="near-note">${t('沒有找到符合的優惠，換個選項再試試。')}</li>`;
   $('#quiz').innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('你的生日行程')}</span>
       <span class="quiz-dots" aria-hidden="true">${STEPS.map(() => '<span class="quiz-dot is-done"></span>').join('')}</span>
-      <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
+      <button type="button" class="quiz-close" data-quiz="close" aria-label="${t('關閉')}">${icon.close(20)}</button></div>
     <h3 class="quiz-title">${esc(t('你是「{title}」', { title: t(r.title) }))}</h3>
     <p class="near-note">${esc(sub)}</p>
     <ol class="quiz-plan">${stops}</ol>
