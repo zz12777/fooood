@@ -1,8 +1,8 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { SAMPLE } from './sample-data.js';
-import { icon, bowl, mark } from './art.js?v=20261123';
+import { icon, bowl, mark } from './art.js?v=20261123b';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
-import { lang, t, catName, areaName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261123b';
+import { lang, t, catName, areaName, weekday, translateDom, mountLangToggle } from './i18n.js?v=20261123c';
 import { linkify, cleanAddress, countyFromAddress, toTrad, fixAddressOrder, areaLabel, shortCounty, groupCats } from './text.js?v=20261109';
 
 const $ = (sel, root = document) => root.querySelector(sel);

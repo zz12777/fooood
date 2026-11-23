@@ -15,6 +15,10 @@ export const icon = {
   external: (s) => ico('<path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>', s),
   arrowLeft: (s) => ico('<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>', s),
   arrowRight: (s) => ico('<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>', s),
+  shuffle: (s) => ico('<path d="M4 7h3.5c2 0 3.2 1 4.3 2.6l1.4 2c1.1 1.6 2.3 2.4 4.3 2.4H20"/><path d="M17 11l3 3-3 3"/><path d="M4 17h3.5c1.3 0 2.3-.4 3.1-1.2"/><path d="M14.5 8.2c.8-.8 1.8-1.2 3-1.2H20"/><path d="M17 4l3 3-3 3"/>', s),
+  download: (s) => ico('<path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/>', s),
+  copy: (s) => ico('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>', s),
+  restart: (s) => ico('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>', s),
   close: (s) => ico('<path d="M6 6l12 12M18 6L6 18"/>', s),
   dice: (s) => ico('<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.1" fill="currentColor" stroke="none"/>', s),
 };

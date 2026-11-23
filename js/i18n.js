@@ -208,6 +208,7 @@ const EN = {
   '沒有找到符合的優惠，換個選項再試試。': 'No matching deals. Try other answers.',
   '分店不一定在你附近，出發前請先查好。優惠以店家公告為準。': 'Branches may not be near you, so check before going. Deals follow each brand\'s announcement.',
   '換一組': 'Shuffle',
+  '優惠以店家公告為準。': 'Deals follow each brand\'s announcement.',
   '目前沒有分店：{list}': 'No branches in: {list}',
   '下載圖片': 'Download image',
   '優惠以店家公告為準': 'Deals follow each brand\'s announcement',

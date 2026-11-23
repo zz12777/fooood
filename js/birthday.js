@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
-import { mark, icon } from './art.js?v=20261123';
-import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123b';
+import { mark, icon } from './art.js?v=20261123b';
+import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123c';
 import { WHEN_LABEL, whenOf } from './bdaytime.js?v=20261123';
 import { downloadPlan } from './planimage.js?v=20261123';
 import { COUNTIES, FOODS, buildPlan } from './bdayquiz.js?v=20261123';
@@ -351,20 +351,18 @@ function renderResult() {
         })
         .join('')
     : `<li class="near-note">${t('沒有找到符合的優惠，換個選項再試試。')}</li>`;
-  $('#quiz').innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('你的生日行程')}</span>
-      <span class="quiz-dots" aria-hidden="true">${STEPS.map(() => '<span class="quiz-dot is-done"></span>').join('')}</span>
+  $('#quiz').innerHTML = `<div class="quiz-head quiz-head-result">
+      <h3 class="quiz-title" id="quiz-heading">${esc(t('你是「{title}」', { title: t(r.title) }))}</h3>
       <button type="button" class="quiz-close" data-quiz="close" aria-label="${t('關閉')}">${icon.close(20)}</button></div>
-    <h3 class="quiz-title">${esc(t('你是「{title}」', { title: t(r.title) }))}</h3>
     <p class="near-note">${esc(sub)}</p>
     <ol class="quiz-plan">${stops}</ol>
-    <p class="near-note">${t('分店不一定在你附近，出發前請先查好。優惠以店家公告為準。')}</p>
-    <div class="row actions">
-      <button type="button" class="btn-primary" data-quiz="again">${t('換一組')}</button>
-      <button type="button" class="btn-secondary" data-quiz="image">${t('下載圖片')}</button>
-      <button type="button" class="btn-secondary" data-quiz="copy" aria-live="polite">${t('複製行程')}</button>
-      <button type="button" class="btn-text" data-quiz="restart">${t('重新測驗')}</button>
-    </div>
-`;
+    <p class="near-note">${t('優惠以店家公告為準。')}</p>
+    <div class="quiz-actions">
+      <button type="button" class="quiz-act is-main" data-quiz="again"><span class="quiz-act-icon">${icon.shuffle(22)}</span><span class="quiz-act-text">${t('換一組')}</span></button>
+      <button type="button" class="quiz-act" data-quiz="image"><span class="quiz-act-icon">${icon.download(22)}</span><span class="quiz-act-text">${t('下載圖片')}</span></button>
+      <button type="button" class="quiz-act" data-quiz="copy"><span class="quiz-act-icon">${icon.copy(22)}</span><span class="quiz-act-text" aria-live="polite">${t('複製行程')}</span></button>
+      <button type="button" class="quiz-act" data-quiz="restart"><span class="quiz-act-icon">${icon.restart(22)}</span><span class="quiz-act-text">${t('重新測驗')}</span></button>
+    </div>`;
 }
 
 function planImageData() {
@@ -446,15 +444,18 @@ function bindQuiz() {
     } else if (act === 'copy') {
       // 按下去暫時變成「已複製」，五秒後換回原本的字
       const btn = e.target.closest('[data-quiz]');
+      const label = btn.querySelector('.quiz-act-text');
       try {
         await navigator.clipboard.writeText(planText());
-        btn.textContent = t('已複製');
+        label.textContent = t('已複製');
+        btn.classList.add('is-done');
       } catch {
-        btn.textContent = t('無法複製');
+        label.textContent = t('無法複製');
       }
       clearTimeout(btn._timer);
       btn._timer = setTimeout(() => {
-        btn.textContent = t('複製行程');
+        label.textContent = t('複製行程');
+        btn.classList.remove('is-done');
       }, 5000);
     }
   });
