@@ -46,6 +46,7 @@ async function route() {
   show('main');
   refreshStats();
   loadBdayList();
+  refreshBcLeft();
 }
 
 async function logout() {
@@ -839,6 +840,83 @@ $('#bday-add').addEventListener('click', () => !bdayRunning && addBdays());
 $('#bday-stop').addEventListener('click', () => {
   bdayStop = true;
   $('#bday-stop').disabled = true;
+});
+
+/* ---------- 用 Google 查壽星優惠品牌的分店縣市 ---------- */
+
+let bcRunning = false;
+let bcStop = false;
+
+async function refreshBcLeft() {
+  const { count, error } = await sb.from('birthday_brands').select('id', { count: 'exact', head: true }).is('counties_checked_at', null);
+  $('#bc-left').textContent = error ? '尚未啟用，請先執行 015_birthday_counties_checked.sql' : `還有 ${count} 個品牌沒查過。`;
+  return error ? 0 : count;
+}
+
+async function runBc() {
+  bcRunning = true;
+  bcStop = false;
+  $('#bc-run').disabled = true;
+  $('#bc-stop').hidden = false;
+  $('#bc-stop').disabled = false;
+  const out = $('#bc-log');
+  out.innerHTML = '';
+  const addLog = (text, kind = '') => {
+    const li = document.createElement('li');
+    if (kind) li.className = `is-${kind}`;
+    li.textContent = text;
+    out.appendChild(li);
+    li.scrollIntoView({ block: 'nearest' });
+  };
+  try {
+    for (;;) {
+      if (bcStop) {
+        addLog('已停止，之後再按一次會從沒查過的繼續。', 'error');
+        break;
+      }
+      addLog('查詢中，每個品牌約 4 秒，請不要關掉這一頁。');
+      const { data, error } = await sb.functions.invoke('bday-counties', { body: { limit: 8 } });
+      if (error) {
+        let msg = error.message;
+        try {
+          const j = await error.context.json();
+          if (j && j.error) msg = j.error;
+        } catch {
+          /* 保留原本的訊息 */
+        }
+        throw new Error(msg);
+      }
+      const results = data.results || [];
+      for (const r of results) {
+        if (r.status === 'found') addLog(`${r.brand}：${r.counties.join('、')}`, 'ok');
+        else if (r.status === 'big') addLog(`${r.brand}：大型連鎖，留空白`);
+        else if (r.status === 'none') addLog(`${r.brand}：Google 找不到分店，留空白`);
+        else addLog(`${r.brand}：${r.message}`, 'error');
+      }
+      if (results.some((r) => r.status === 'failed')) {
+        addLog('遇到錯誤先停下。如果是額度用完，過了台灣下午 3 點再按一次。', 'error');
+        break;
+      }
+      if (!results.length || !data.left) {
+        addLog('全部查完了。', 'ok');
+        break;
+      }
+    }
+  } catch (e) {
+    addLog(`失敗：${e.message}`, 'error');
+  } finally {
+    bcRunning = false;
+    $('#bc-run').disabled = false;
+    $('#bc-stop').hidden = true;
+    refreshBcLeft();
+    refreshStats();
+    loadBdayList();
+  }
+}
+$('#bc-run').addEventListener('click', () => !bcRunning && runBc());
+$('#bc-stop').addEventListener('click', () => {
+  bcStop = true;
+  $('#bc-stop').disabled = true;
 });
 
 const saveAdd = keepText('#add-input', 'fooood:pending-links');

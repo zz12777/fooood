@@ -153,6 +153,16 @@
           <button type="button" class="btn-secondary" id="bday-stop" hidden>停止</button>
         </div>
         <ol class="log" id="bday-log" aria-live="polite"></ol>
+        <h3 class="sub-title">用 Google 查分店在哪些縣市</h3>
+        <p class="muted">
+          每個品牌搜尋一次全台，把有分店的縣市填進「有分店的縣市」，生日行程測驗就只會推薦給附近有店的人。全台超過 20 間的大連鎖會留空白，當作全台都有。每個品牌用 1 次查詢額度，查過的不會重查。
+        </p>
+        <p class="muted" id="bc-left"></p>
+        <div class="row actions">
+          <button type="button" class="btn-primary" id="bc-run">開始查詢</button>
+          <button type="button" class="btn-secondary" id="bc-stop" hidden>停止</button>
+        </div>
+        <ol class="log" id="bc-log" aria-live="polite"></ol>
         <details class="bday-manage">
           <summary id="bday-summary">修改或刪除現有優惠</summary>
           <label class="field field-wide">
@@ -175,6 +185,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261123b"></script>
+  <script type="module" src="js/admin.js?v=20261123c"></script>
 </body>
 </html>
