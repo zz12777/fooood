@@ -163,6 +163,11 @@
           <button type="button" class="btn-secondary" id="bc-stop" hidden>停止</button>
         </div>
         <ol class="log" id="bc-log" aria-live="polite"></ol>
+        <details class="bday-manage" id="bc-miss-box">
+          <summary id="bc-miss-summary">Google 找不到分店的品牌</summary>
+          <p class="muted">這些品牌要請你自己查。點「在 Google Map 查」看看，有分店的話填縣市後按儲存；確定全台都有就按「全台都有」。</p>
+          <ul class="bday-list" id="bc-miss"></ul>
+        </details>
         <details class="bday-manage">
           <summary id="bday-summary">修改或刪除現有優惠</summary>
           <label class="field field-wide">
@@ -185,6 +190,6 @@
     </div>
   </main>
 
-  <script type="module" src="js/admin.js?v=20261123c"></script>
+  <script type="module" src="js/admin.js?v=20261123d"></script>
 </body>
 </html>

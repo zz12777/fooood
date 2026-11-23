@@ -225,3 +225,24 @@
   display: grid;
   gap: 8px;
 }
+.bc-miss-row {
+  flex-wrap: wrap;
+}
+.bc-miss-row a {
+  margin-left: 8px;
+  font-size: 0.8125rem;
+}
+.bc-miss-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.bc-miss-form input {
+  width: 12rem;
+  min-height: 36px;
+  padding: 0 8px;
+  font: inherit;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+}

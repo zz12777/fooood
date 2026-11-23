@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
         const counties = big ? [] : [...new Set(matched.map((p) => countyOf(p.formattedAddress)).filter(Boolean))];
         const { error: uErr } = await db
           .from('birthday_brands')
-          .update({ counties, counties_checked_at: new Date().toISOString() })
+          .update({ counties, counties_status: big ? 'big' : counties.length ? 'found' : 'none', counties_checked_at: new Date().toISOString() })
           .eq('id', b.id);
         if (uErr) throw new Error(`寫入失敗：${uErr.message}`);
         results.push({ brand: b.brand, status: big ? 'big' : counties.length ? 'found' : 'none', counties, found: matched.length });

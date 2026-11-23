@@ -47,6 +47,7 @@ async function route() {
   refreshStats();
   loadBdayList();
   refreshBcLeft();
+  loadBcMiss();
 }
 
 async function logout() {
@@ -737,6 +738,7 @@ $('#bday-list').addEventListener('submit', async (e) => {
     source: v('source') || null,
     when_type: v('when_type'),
     counties: v('counties').split(/[,，、]/).map((x) => x.trim().replace(/臺/g, '台')).filter(Boolean),
+    counties_status: 'manual',
     no_counties: v('no_counties').split(/[,，、]/).map((x) => x.trim().replace(/臺/g, '台')).filter(Boolean),
     updated_at: new Date().toISOString(),
   };
@@ -911,8 +913,50 @@ async function runBc() {
     refreshBcLeft();
     refreshStats();
     loadBdayList();
+    loadBcMiss();
   }
 }
+
+// Google 找不到分店的品牌，整理出來讓站主手動補
+async function loadBcMiss() {
+  const el = $('#bc-miss');
+  const { data, error } = await sb.from('birthday_brands').select('id,brand,counties').eq('counties_status', 'none').order('brand');
+  if (error) {
+    $('#bc-miss-box').hidden = true;
+    return;
+  }
+  $('#bc-miss-box').hidden = !data.length;
+  $('#bc-miss-summary').textContent = `Google 找不到分店的品牌（${data.length} 個，請手動補）`;
+  el.innerHTML = data
+    .map(
+      (b) => `<li class="bc-miss-row" data-id="${b.id}">
+        <div><strong>${escA(b.brand)}</strong>
+          <a class="muted" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.brand)}" target="_blank" rel="noopener noreferrer">在 Google Map 查</a></div>
+        <form class="bc-miss-form" data-bc-form="${b.id}">
+          <input type="text" name="counties" placeholder="例如 台北市, 新北市" aria-label="${escA(b.brand)} 有分店的縣市" />
+          <button type="submit" class="btn-secondary">儲存</button>
+          <button type="button" class="btn-text" data-bc-all="${b.id}">全台都有</button>
+        </form>
+      </li>`
+    )
+    .join('');
+}
+
+$('#bc-miss').addEventListener('submit', async (e) => {
+  const form = e.target.closest('[data-bc-form]');
+  if (!form) return;
+  e.preventDefault();
+  const counties = form.elements.counties.value.split(/[,，、\s]+/).map((x) => x.trim().replace(/臺/g, '台')).filter(Boolean);
+  if (!counties.length) return;
+  const { error } = await sb.from('birthday_brands').update({ counties, counties_status: 'manual' }).eq('id', Number(form.dataset.bcForm));
+  if (!error) loadBcMiss();
+});
+$('#bc-miss').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-bc-all]');
+  if (!btn) return;
+  const { error } = await sb.from('birthday_brands').update({ counties: [], counties_status: 'manual' }).eq('id', Number(btn.dataset.bcAll));
+  if (!error) loadBcMiss();
+});
 $('#bc-run').addEventListener('click', () => !bcRunning && runBc());
 $('#bc-stop').addEventListener('click', () => {
   bcStop = true;
