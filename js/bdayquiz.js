@@ -60,6 +60,7 @@ export function buildPlan(brands, answers, rnd = Math.random) {
     const r = regionOf(b);
     if (r && short && r !== short) return false;
     if (!answers.member && needsMember(b)) return false;
+    if ((b.no_counties || []).includes(answers.county)) return false;
     return true;
   });
   const used = new Set();

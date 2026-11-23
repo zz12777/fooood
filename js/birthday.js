@@ -1,7 +1,8 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { mark, icon } from './art.js?v=20261109';
-import { t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123';
+import { lang, t, catName, areaName, translateDom, mountLangToggle } from './i18n.js?v=20261123';
 import { WHEN_LABEL, whenOf } from './bdaytime.js?v=20261123';
+import { downloadPlan } from './planimage.js?v=20261123';
 import { COUNTIES, FOODS, buildPlan } from './bdayquiz.js?v=20261123';
 import { linkify, cleanAddress, fixAddressOrder, countyFromAddress } from './text.js?v=20261109';
 import { MODES, MINUTE_OPTIONS, minutesTo, withinLimit, routeUrl, geocode, currentPosition } from './nearby.js?v=20261109';
@@ -80,6 +81,8 @@ function whenTag(b) {
 function extraHtml(b) {
   const parts = [];
   if (b.note) parts.push(`<p class="note">${linkify(b.note)}</p>`);
+  if (b.no_counties && b.no_counties.length)
+    parts.push(`<p class="addr">${esc(t('目前沒有分店：{list}', { list: b.no_counties.map(areaName).join(lang === 'en' ? ', ' : '、') }))}</p>`);
   if (b.source) parts.push(`<p class="addr">${t('來源：')}${linkify(b.source)}</p>`);
   return parts.join('');
 }
@@ -320,7 +323,7 @@ function renderQuiz() {
       ${optBtn('member', 'yes', t('可以'), a.member === true)}
       ${optBtn('member', 'no', t('不想，只要不用加會員的'), a.member === false)}</div>`;
   }
-  el.innerHTML = `<div class="quiz-head"><span class="quiz-progress">${quiz.step + 1} / ${STEPS.length}</span>
+  el.innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('幫我排生日行程')}　${quiz.step + 1} / ${STEPS.length}</span>
       <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
     ${body}
     ${quiz.step ? `<button type="button" class="btn-text quiz-back" data-quiz="back">${t('上一題')}</button>` : ''}`;
@@ -347,7 +350,7 @@ function renderResult() {
         })
         .join('')
     : `<li class="near-note">${t('沒有找到符合的優惠，換個選項再試試。')}</li>`;
-  $('#quiz').innerHTML = `<div class="quiz-head"><span class="quiz-progress">${t('你的生日行程')}</span>
+  $('#quiz').innerHTML = `<div class="quiz-head"><span class="quiz-progress" id="quiz-heading">${t('你的生日行程')}</span>
       <button type="button" class="btn-text" data-quiz="close">${t('關閉')}</button></div>
     <h3 class="quiz-title">${esc(t('你是「{title}」', { title: t(r.title) }))}</h3>
     <p class="near-note">${esc(sub)}</p>
@@ -355,10 +358,23 @@ function renderResult() {
     <p class="near-note">${t('分店不一定在你附近，出發前請先查好。優惠以店家公告為準。')}</p>
     <div class="row actions">
       <button type="button" class="btn-primary" data-quiz="again">${t('換一組')}</button>
+      <button type="button" class="btn-secondary" data-quiz="image">${t('下載圖片')}</button>
       <button type="button" class="btn-secondary" data-quiz="copy">${t('複製行程')}</button>
       <button type="button" class="btn-text" data-quiz="restart">${t('重新測驗')}</button>
     </div>
     <p class="near-note" id="quiz-copied" aria-live="polite"></p>`;
+}
+
+function planImageData() {
+  const a = quiz.answers;
+  const r = quiz.result;
+  return {
+    kicker: t('新竹吃什麼 壽星優惠'),
+    title: t('你是「{title}」', { title: t(r.title) }),
+    sub: [a.day === 'birthday' ? t('生日當天') : t('生日月的其他天'), areaName(a.county), t(['', '自己一個人', '兩個人', '', '三到四個人', '五人以上'][a.party])].join('｜'),
+    stops: r.plan.map(({ slot, brand: b }) => ({ time: t(slot.label), brand: b.brand, offer: b.offer, note: b.note || '' })),
+    footer: `zz12777.github.io/fooood　${t('優惠以店家公告為準')}`,
+  };
 }
 
 function planText() {
@@ -370,14 +386,25 @@ function nextStep() {
   if (quiz.step < STEPS.length - 1) quiz.step += 1;
   else quiz.result = buildPlan(state.brands, quiz.answers);
   renderQuiz();
-  $('#quiz').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  $('#quiz').scrollTop = 0;
+}
+
+function closeQuiz() {
+  const d = $('#quiz');
+  if (d.close) d.close();
+  else d.removeAttribute('open');
 }
 
 function bindQuiz() {
+  // 點視窗外面的灰色區域也會關閉
+  $('#quiz').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeQuiz();
+  });
   $('#quiz-open').addEventListener('click', () => {
-    $('#quiz').hidden = false;
     renderQuiz();
-    $('#quiz').scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const d = $('#quiz');
+    if (d.showModal) d.showModal();
+    else d.setAttribute('open', '');
   });
   $('#quiz').addEventListener('change', (e) => {
     if (e.target.id === 'quiz-county') quiz.answers.county = e.target.value;
@@ -404,7 +431,7 @@ function bindQuiz() {
     else if (act === 'back') {
       quiz.step = Math.max(0, quiz.step - 1);
       renderQuiz();
-    } else if (act === 'close') $('#quiz').hidden = true;
+    } else if (act === 'close') closeQuiz();
     else if (act === 'again') {
       quiz.result = buildPlan(state.brands, a);
       renderQuiz();
@@ -412,6 +439,8 @@ function bindQuiz() {
       quiz.step = 0;
       quiz.result = null;
       renderQuiz();
+    } else if (act === 'image') {
+      if (quiz.result.plan.length) await downloadPlan(planImageData(), 'birthday-plan.png');
     } else if (act === 'copy') {
       try {
         await navigator.clipboard.writeText(planText());

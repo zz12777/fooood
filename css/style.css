@@ -1021,15 +1021,21 @@ main {
 
 /* ---------- 生日行程測驗 ---------- */
 .quiz {
-  display: grid;
-  gap: 14px;
+  width: min(640px, calc(100% - 32px));
+  max-height: 88vh;
+  overflow-y: auto;
   padding: 20px;
+  color: var(--ink);
   background: var(--card);
   border: 1.5px solid var(--ink);
   border-radius: var(--radius);
 }
-.quiz[hidden] {
-  display: none;
+.quiz[open] {
+  display: grid;
+  gap: 14px;
+}
+.quiz::backdrop {
+  background: rgba(60, 50, 30, 0.45);
 }
 .quiz h3 {
   font-size: 1.25rem;
@@ -1102,7 +1108,11 @@ main {
   gap: 8px;
 }
 .quiz-stop-body h4 {
+  margin: 0;
   font-size: 1.125rem;
+}
+.quiz-stop-body > * {
+  margin: 0;
 }
 .tag-when {
   background: var(--yellow-soft);

@@ -666,6 +666,7 @@ function bdayEditHtml(b) {
         (w) => `<option value="${w}"${(b.when_type || guessWhen(b.offer, b.note)) === w ? ' selected' : ''}>${WHEN_LABEL[w]}</option>`
       ).join('')}</select></label>
       ${f('備註', 'note', b.note || '', true)}
+      ${f('沒有分店的縣市（用逗號隔開，例如 新竹市, 新竹縣）', 'no_counties', (b.no_counties || []).join(', '))}
       ${f('來源（可以放多個網址，用空白隔開）', 'source', b.source || '')}
       <div class="row actions">
         <button type="submit" class="btn-primary">儲存</button>
@@ -733,6 +734,7 @@ $('#bday-list').addEventListener('submit', async (e) => {
     note: v('note') || null,
     source: v('source') || null,
     when_type: v('when_type'),
+    no_counties: v('no_counties').split(/[,，、]/).map((x) => x.trim().replace(/臺/g, '台')).filter(Boolean),
     updated_at: new Date().toISOString(),
   };
   say(status, '儲存中');
